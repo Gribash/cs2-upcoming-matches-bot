@@ -1,0 +1,18 @@
+services:
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: cs2_bot
+    restart: always
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+      - ./data:/app/data
+      - ./bot:/app/bot
+      - ./utils:/app/utils
+    env_file:
+      - .env
+    command: supervisord -c /app/supervisord.conf
+    ports:
+      - "8000:8000"
