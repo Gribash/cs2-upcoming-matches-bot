@@ -81,3 +81,18 @@ async def notify_upcoming_matches(bot):
 
     except Exception as e:
         logger.error(f"Ошибка в notify_upcoming_matches: {e}")
+
+if __name__ == "__main__":
+    from telegram import Bot
+
+    TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+    INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
+
+    bot = Bot(token=TELEGRAM_BOT_TOKEN)
+
+    async def main():
+        while True:
+            await notify_upcoming_matches(bot)
+            await asyncio.sleep(INTERVAL)
+
+    asyncio.run(main())
