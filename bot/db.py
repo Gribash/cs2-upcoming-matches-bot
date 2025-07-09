@@ -13,10 +13,12 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Таблица подписчиков
+    # Таблица подписчиков с типом подписки и активностью
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS subscribers (
-            user_id INTEGER PRIMARY KEY
+            user_id INTEGER PRIMARY KEY,
+            tier TEXT DEFAULT 'sa',
+            is_active INTEGER DEFAULT 1
         );
     """)
 
@@ -34,25 +36,35 @@ def init_db():
     conn.close()
     logger.info("База данных и таблицы инициализированы.")
 
-def add_subscriber(user_id: int):
+def add_subscriber(user_id: int, tier: str = "sa"):
     with sqlite3.connect(DB_PATH) as conn:
-        conn.execute("INSERT OR IGNORE INTO subscribers (user_id) VALUES (?)", (user_id,))
+        conn.execute(
+            "INSERT INTO subscribers (user_id, tier, is_active) VALUES (?, ?, 1) "
+            "ON CONFLICT(user_id) DO UPDATE SET tier = excluded.tier, is_active = 1",
+            (user_id, tier)
+        )
         conn.commit()
-        logger.info(f"Пользователь {user_id} добавлен в подписчики.")
+        logger.info(f"Пользователь {user_id} добавлен/обновлён с подпиской '{tier}'.")
 
 def remove_subscriber(user_id: int):
     with sqlite3.connect(DB_PATH) as conn:
-        logger.info(f"Попытка удалить пользователя {user_id} из подписчиков.")
-        cursor = conn.execute("DELETE FROM subscribers WHERE user_id = ?", (user_id,))
+        logger.info(f"Отключаем уведомления для пользователя {user_id}.")
+        conn.execute("UPDATE subscribers SET is_active = 0 WHERE user_id = ?", (user_id,))
         conn.commit()
-        logger.info(f"Удалено строк: {cursor.rowcount}")
+        logger.info(f"Пользователь {user_id} отмечен как неактивный.")
 
 def get_all_subscribers() -> list[int]:
     with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute("SELECT user_id FROM subscribers")
+        cursor = conn.execute("SELECT user_id FROM subscribers WHERE is_active = 1")
         users = [row[0] for row in cursor.fetchall()]
-        logger.info(f"Получено {len(users)} подписчиков из базы.")
+        logger.info(f"Получено {len(users)} активных подписчиков из базы.")
         return users
+
+def get_subscriber_tier(user_id: int) -> str:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute("SELECT tier FROM subscribers WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        return row[0] if row else "sa"  # по умолчанию — только топовые турниры
 
 def was_notified(user_id: int, match_id: int) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
@@ -76,6 +88,6 @@ def mark_notified(user_id: int, match_id: int):
 def get_notified_match_ids(user_id: int) -> set:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT match_id FROM notified_matches WHERE user_id = ?", (user_id,))
-        ids = {row[0] for row in cursor.fetchall()}
+        ids = [row[0] for row in cursor.fetchall()]
         logger.debug(f"Получено {len(ids)} уведомлений для пользователя {user_id}")
         return ids

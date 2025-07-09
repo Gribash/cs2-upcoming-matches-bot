@@ -8,11 +8,15 @@ from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Импорт утилит
-from utils.pandascore import get_upcoming_cs2_matches
-from utils.pandascore import get_recent_cs2_matches
-from utils.pandascore import get_live_cs2_matches
-from utils.pandascore import get_mock_upcoming_matches
-from db import init_db, add_subscriber, remove_subscriber
+from utils.pandascore import get_upcoming_cs2_matches, get_recent_cs2_matches, get_live_cs2_matches
+from db import (
+    init_db,
+    add_subscriber,
+    update_is_active,
+    get_subscriber_tier,
+    is_subscriber_active,
+    update_tier,
+)
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -39,15 +43,21 @@ logger = logging.getLogger(__name__)
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    add_subscriber(user_id)
+    add_subscriber(user_id, tier="sa")       # подписка только на s и a tier
+    update_is_active(user_id, True)          # включаем активность
     logger.info(f"/start от пользователя {user_id}")
-    await update.message.reply_text("Привет! Я бот для CS2 матчей. Введи /next чтобы узнать ближайшие матчи.")
+    await update.message.reply_text(
+        "Привет! Я бот для CS2 матчей. Ты автоматически подписан на уведомления о матчах топ-турниров (S и A tier).\n\n"
+        "Введи /next, чтобы узнать ближайшие матчи."
+    )
 
 # Команда /live
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
-    matches = await get_live_cs2_matches()
+
+    tier = get_subscriber_tier(user_id)  # может быть 'sa' или 'all'
+    matches = await get_live_cs2_matches(tier=tier)
 
     if not matches:
         await update.message.reply_text("Сейчас нет активных матчей.")
@@ -66,8 +76,10 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Команда /next
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    matches = await get_upcoming_cs2_matches(limit=5)
     logger.info(f"/next от пользователя {user_id}")
+
+    tier = get_subscriber_tier(user_id)
+    matches = await get_upcoming_cs2_matches(limit=5, tier=tier)
 
     if not matches:
         await update.message.reply_text("Нет ближайших матчей.")
@@ -87,8 +99,10 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Команда /recent
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    matches = await get_recent_cs2_matches(limit=5)
     logger.info(f"/recent от пользователя {user_id}")
+
+    tier = get_subscriber_tier(user_id)
+    matches = await get_recent_cs2_matches(limit=5, tier=tier)
 
     if not matches:
         await update.message.reply_text("Нет завершённых матчей.")
@@ -107,42 +121,26 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Команда /subscribe
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    add_subscriber(user_id)
+    add_subscriber(user_id, tier='sa')  # явно устанавливаем tier
+    update_is_active(user_id, True)
     logger.info(f"/subscribe от пользователя {user_id}")
-    await update.message.reply_text("Вы подписаны на уведомления о ближайших матчах.")
+    await update.message.reply_text("Вы подписаны на уведомления о ближайших матчах S и A-tier турниров.")
 
 # Команда /unsubscribe
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    remove_subscriber(user_id)
+    update_is_active(user_id, False)
     logger.info(f"/unsubscribe от пользователя {user_id}")
     await update.message.reply_text("Вы отписаны от уведомлений.")
 
-# Команда /status
-async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("✅ Бот работает.")
-
-# Команда /test_notify
-async def test_notify(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Команда /subscribe_all
+async def subscribe_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    matches = await get_mock_upcoming_matches()
-
-    if not matches:
-        await update.message.reply_text("Нет мок-матчей для теста.")
-        return
-
-    for match in matches:
-        text = (
-            f"🔔 [ТЕСТ] Скоро начнётся матч!\n\n"
-            f"🟣 {match['league']} | {match['tournament']}\n"
-            f"🆚 {match['teams']}\n"
-            f"⏳ {match['time_until']}\n"
-            f"🖥 {match['stream_url']}"
-        )
-        try:
-            await update.message.reply_text(text)
-        except Exception as e:
-            logger.warning(f"Ошибка при отправке тест-уведомления: {e}")
+    add_subscriber(user_id, tier="all")
+    update_is_active(user_id, True)
+    update_tier(user_id, "all")
+    logger.info(f"/subscribe_all от пользователя {user_id}")
+    await update.message.reply_text("Теперь вы подписаны на все матчи (включая B, C и D турниры).")
 
 # Установка команд
 async def set_bot_commands(app):
@@ -153,8 +151,7 @@ async def set_bot_commands(app):
         BotCommand("recent", "Показать завершённые матчи"),
         BotCommand("subscribe", "Подписаться на уведомления"),
         BotCommand("unsubscribe", "Отписаться от уведомлений"),
-        BotCommand("status", "Проверить, работает ли бот"),
-        BotCommand("test_notify", "Отправить тестовое уведомление"),
+        BotCommand("subscribe_all", "Подписаться на все матчи всех уровней"),
     ]
     await app.bot.set_my_commands(commands)
 
@@ -167,10 +164,9 @@ async def main():
     app.add_handler(CommandHandler("next", next_matches))
     app.add_handler(CommandHandler("subscribe", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
+    app.add_handler(CommandHandler("subscribe_all", subscribe_all))
     app.add_handler(CommandHandler("recent", recent_matches))
     app.add_handler(CommandHandler("live", live_matches))
-    app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("test_notify", test_notify))
 
     await set_bot_commands(app)
 

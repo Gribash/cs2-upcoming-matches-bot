@@ -1,7 +1,7 @@
 import os
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from dotenv import load_dotenv
 import httpx
 
@@ -19,6 +19,12 @@ logger = logging.getLogger(__name__)
 _tournament_cache = {
     "data": [],
     "timestamp": 0
+}
+
+# Карта уровней турниров по подписке
+TIER_MAP = {
+    "sa": ["S", "A"],
+    "all": ["S", "A", "B", "C", "D"]
 }
 
 def format_time_until(start_time_iso: str) -> str:
@@ -45,7 +51,7 @@ def format_time_until(start_time_iso: str) -> str:
         return "Начнётся через " + " ".join(parts) if parts else "Скоро"
     except Exception:
         return "время неизвестно"
-    
+
 def extract_stream_url(streams_list: list) -> str:
     if not streams_list:
         return "Трансляция недоступна"
@@ -83,17 +89,20 @@ async def get_top_tournament_ids(tiers=["S", "A", "B", "C", "D"], limit=50, ttl_
                 ids = [t["id"] for t in tournaments]
                 all_ids.extend(ids)
                 logger.info(f"Получено {len(ids)} турниров со статусом '{status}'")
+            except httpx.HTTPStatusError as e:
+                logger.error(f"[Ошибка {e.response.status_code}] {e.request.url}")
             except httpx.RequestError as e:
-                logger.error(f"[Ошибка получения турниров {status}] {e}")
+                logger.error(f"[Ошибка подключения к {url}] {e}")
 
     _tournament_cache["data"] = all_ids
     _tournament_cache["timestamp"] = now
     return all_ids
 
-async def get_upcoming_cs2_matches(limit=5):
-    tournament_ids = await get_top_tournament_ids()
+async def get_upcoming_cs2_matches(limit=5, tier="sa"):
+    tiers = TIER_MAP.get(tier, ["S", "A"])
+    tournament_ids = await get_top_tournament_ids(tiers=tiers)
     if not tournament_ids:
-        logger.error("Не удалось получить ID топовых турниров.")
+        logger.error("Не удалось получить ID турниров.")
         return []
 
     url = f"{BASE_URL}/csgo/matches/upcoming"
@@ -109,19 +118,19 @@ async def get_upcoming_cs2_matches(limit=5):
             response.raise_for_status()
             matches = response.json()
 
-        logger.info(f"Успешно получено {len(matches)} матчей CS2 от PandaScore")
+        logger.info(f"Успешно получено {len(matches)} предстоящих матчей CS2")
         result = []
         for match in matches:
             teams = " vs ".join(
                 [t["opponent"]["name"] for t in match.get("opponents", []) if t.get("opponent")]
             ) or "TBD"
             stream_url = extract_stream_url(match.get("streams_list", []))
-            
+
             result.append({
                 "id": match["id"],
                 "name": match.get("name", teams),
                 "teams": teams,
-                "begin_at": match.get("begin_at"), 
+                "begin_at": match.get("begin_at"),
                 "time_until": format_time_until(match.get("begin_at", "")),
                 "league": match.get("league", {}).get("name", "Неизвестная лига"),
                 "tournament": match.get("tournament", {}).get("name", "Неизвестный турнир"),
@@ -130,13 +139,14 @@ async def get_upcoming_cs2_matches(limit=5):
         return result
 
     except httpx.RequestError as e:
-        logger.error(f"[Ошибка API PandaScore] {e}")
+        logger.error(f"[Ошибка получения предстоящих матчей] {e}")
         return []
 
-async def get_live_cs2_matches():
-    tournament_ids = await get_top_tournament_ids()
+async def get_live_cs2_matches(tier="sa"):
+    tiers = TIER_MAP.get(tier, ["S", "A"])
+    tournament_ids = await get_top_tournament_ids(tiers=tiers)
     if not tournament_ids:
-        logger.warning("Не удалось получить список топовых турниров для live матчей.")
+        logger.warning("Не удалось получить турниры для live матчей.")
         return []
 
     url = f"{BASE_URL}/csgo/matches/running"
@@ -172,7 +182,7 @@ async def get_live_cs2_matches():
         logger.error(f"[Ошибка получения live матчей] {e}")
         return []
 
-async def get_recent_cs2_matches(limit=5):
+async def get_recent_cs2_matches(limit=5, tier="sa"):
     url = f"{BASE_URL}/csgo/matches/past"
     params = {
         "per_page": limit,
@@ -185,7 +195,7 @@ async def get_recent_cs2_matches(limit=5):
             response.raise_for_status()
             matches = response.json()
 
-        logger.info(f"Успешно получено {len(matches)} прошедших матчей CS2 от PandaScore")
+        logger.info(f"Успешно получено {len(matches)} прошедших матчей CS2")
 
         return [
             {
@@ -202,10 +212,8 @@ async def get_recent_cs2_matches(limit=5):
         ]
 
     except httpx.RequestError as e:
-        logger.error(f"[Ошибка API PandaScore] {e}")
+        logger.error(f"[Ошибка получения прошедших матчей] {e}")
         return []
-    
-from datetime import datetime, timedelta, timezone
 
 async def get_mock_upcoming_matches():
     return [
