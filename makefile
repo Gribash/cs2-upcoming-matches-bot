@@ -17,6 +17,12 @@ stop:
 logs:
 	docker-compose logs -f
 
+shell:
+	docker exec -it $$(docker ps -qf "name=cs2_bot") bash
+
+env-check:
+	@cat $(ENV_FILE)
+
 # ==== Работа с git ====
 
 create-feature:
@@ -36,10 +42,22 @@ merge-dev:
 	git merge dev
 	git push origin main
 
-# ==== Деплой на сервер ====
+pull-main:
+	git checkout main
+	git pull origin main
+
+push-main:
+	git checkout main
+	git add .
+	git commit -m "🚀 Обновление продакшена"
+	git push origin main
+
+# ==== Деплой ====
 
 deploy:
 	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH) && ./$(DEPLOY_SCRIPT)'
+
+sync-prod: pull-main merge-dev deploy
 
 # ==== Утилиты ====
 
@@ -51,3 +69,5 @@ branches:
 
 whoami:
 	@echo "Проект: $(PROJECT_DIR)"
+
+.PHONY: run stop logs shell env-check create-feature push-dev merge-dev pull-main push-main deploy sync-prod status branches whoami
