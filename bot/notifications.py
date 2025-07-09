@@ -21,11 +21,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Мок-данные для тестов
-from datetime import datetime, timedelta, timezone
-
 async def get_mock_upcoming_matches():
     start_time = datetime.now(timezone.utc) + timedelta(minutes=1)
-    begin_at_iso = start_time.isoformat()  # формат: 2025-07-04T17:51:00+00:00
+    begin_at_iso = start_time.isoformat()
 
     return [
         {
@@ -39,25 +37,39 @@ async def get_mock_upcoming_matches():
         }
     ]
 
-# Логика уведомлений
+# Основная логика уведомлений
 async def notify_upcoming_matches(bot):
     try:
+        logger.info("Запуск проверки матчей...")
+
         matches = await (get_mock_upcoming_matches() if USE_MOCK else get_upcoming_cs2_matches(limit=10))
+        logger.info(f"Найдено матчей: {len(matches)}")
+
         subscribers = get_all_subscribers()
+        logger.info(f"Найдено подписчиков: {len(subscribers)}")
+
         now = datetime.now(timezone.utc)
+        logger.info(f"Текущее UTC время: {now.isoformat()}")
 
         for match in matches:
-            match_id = match["id"]
+            match_id = match.get("id")
             begin_at = match.get("begin_at")
+
+            logger.info(f"Обработка матча {match_id} | Время начала: {begin_at}")
+
             if not begin_at:
+                logger.warning(f"У матча {match_id} нет begin_at")
                 continue
 
             try:
                 start_time = datetime.fromisoformat(begin_at.replace("Z", "+00:00"))
-            except Exception:
+            except Exception as e:
+                logger.error(f"Ошибка при разборе времени begin_at для матча {match_id}: {e}")
                 continue
 
             minutes_to_start = (start_time - now).total_seconds() / 60
+            logger.info(f"До начала матча {match_id}: {minutes_to_start:.2f} минут")
+
             if 0 <= minutes_to_start <= 5:
                 text = (
                     f"🔔 Скоро начнётся матч!\n\n"
@@ -68,20 +80,26 @@ async def notify_upcoming_matches(bot):
                 )
 
                 for user_id in subscribers:
-                    already_notified = match_id in get_notified_match_ids(user_id)
+                    notified_set = get_notified_match_ids(user_id)
+                    already_notified = match_id in notified_set
+
                     if already_notified:
+                        logger.info(f"Пользователь {user_id} уже уведомлён о матче {match_id}")
                         continue
 
                     try:
                         await bot.send_message(chat_id=user_id, text=text)
                         mark_notified(user_id, match_id)
-                        logger.info(f"Отправлено уведомление пользователю {user_id} о матче {match_id}")
+                        logger.info(f"✅ Отправлено уведомление пользователю {user_id} о матче {match_id}")
                     except Exception as e:
-                        logger.warning(f"Не удалось отправить сообщение пользователю {user_id}: {e}")
+                        logger.warning(f"⚠️ Не удалось отправить сообщение пользователю {user_id}: {e}")
+            else:
+                logger.info(f"Матч {match_id} начинается не скоро (>{minutes_to_start:.2f} мин.)")
 
     except Exception as e:
-        logger.error(f"Ошибка в notify_upcoming_matches: {e}")
+        logger.error(f"🔥 Ошибка в notify_upcoming_matches: {e}")
 
+# Автозапуск
 if __name__ == "__main__":
     from telegram import Bot
 
