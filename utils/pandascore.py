@@ -121,6 +121,7 @@ async def get_upcoming_cs2_matches(limit=5):
                 "id": match["id"],
                 "name": match.get("name", teams),
                 "teams": teams,
+                "begin_at": match.get("begin_at"), 
                 "time_until": format_time_until(match.get("begin_at", "")),
                 "league": match.get("league", {}).get("name", "Неизвестная лига"),
                 "tournament": match.get("tournament", {}).get("name", "Неизвестный турнир"),
