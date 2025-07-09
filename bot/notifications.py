@@ -70,7 +70,7 @@ async def notify_upcoming_matches(bot):
             minutes_to_start = (start_time - now).total_seconds() / 60
             logger.info(f"До начала матча {match_id}: {minutes_to_start:.2f} минут")
 
-            if -30 <= minutes_to_start <= 30:
+            if -5 <= minutes_to_start <= 5:
                 text = (
                     f"🔔 Скоро начнётся матч!\n\n"
                     f"🟣 {match['league']} | {match['tournament']}\n"
