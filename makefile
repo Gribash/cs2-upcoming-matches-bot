@@ -2,7 +2,7 @@
 PROJECT_DIR := $(shell pwd)
 ENV_FILE := .env
 SSH_USER := root
-SSH_HOST := 31.130.149.146
+SSH_HOST := cs2-vps
 SSH_PATH := /root/cs2-bot
 DEPLOY_SCRIPT := deploy.sh
 
