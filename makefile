@@ -55,7 +55,9 @@ push-main:
 # ==== Деплой ====
 
 deploy:
+	@echo "🚀 Выполняется деплой на сервер $(SSH_HOST)..."
 	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH) && ./$(DEPLOY_SCRIPT)'
+	@echo "📄 Логи деплоя доступны в каталоге /root/cs2-bot_deploys/"
 
 sync-prod: pull-main merge-dev deploy
 
