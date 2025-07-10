@@ -54,7 +54,11 @@ push-main:
 
 # ==== Деплой ====
 
-deploy:
+upload-deploy:
+	scp deploy.sh $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/deploy.sh
+	ssh $(SSH_USER)@$(SSH_HOST) "chmod +x $(SSH_PATH)/deploy.sh"
+
+deploy: upload-deploy
 	@echo "🚀 Выполняется деплой на сервер $(SSH_HOST)..."
 	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH) && ./$(DEPLOY_SCRIPT)'
 	@echo "📄 Логи деплоя доступны в каталоге /root/cs2-bot_deploys/"
