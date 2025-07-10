@@ -93,3 +93,9 @@ def get_notified_match_ids(user_id: int) -> set:
         ids = [row[0] for row in cursor.fetchall()]
         logger.debug(f"Получено {len(ids)} уведомлений для пользователя {user_id}: {ids}")
         return set(ids)
+    
+def update_is_active(user_id: int, is_active: bool):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute("UPDATE subscribers SET is_active = ? WHERE user_id = ?", (1 if is_active else 0, user_id))
+        conn.commit()
+        logger.info(f"Пользователь {user_id} обновлён: is_active = {is_active}")
