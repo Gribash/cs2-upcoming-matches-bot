@@ -99,3 +99,11 @@ def update_is_active(user_id: int, is_active: bool):
         conn.execute("UPDATE subscribers SET is_active = ? WHERE user_id = ?", (1 if is_active else 0, user_id))
         conn.commit()
         logger.info(f"Пользователь {user_id} обновлён: is_active = {is_active}")
+
+def is_subscriber_active(user_id: int) -> bool:
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.execute("SELECT is_active FROM subscribers WHERE user_id = ?", (user_id,))
+        row = cursor.fetchone()
+        result = row is not None and row[0] == 1
+        logger.debug(f"Проверка активности пользователя {user_id}: {result}")
+        return result
