@@ -71,3 +71,6 @@ whoami:
 	@echo "Проект: $(PROJECT_DIR)"
 
 .PHONY: run stop logs shell env-check create-feature push-dev merge-dev pull-main push-main deploy sync-prod status branches whoami
+
+clear-logs:
+	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH)/logs && for f in *.log *.err.log; do :> $$f; done'
