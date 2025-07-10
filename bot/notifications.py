@@ -27,20 +27,20 @@ logger = logging.getLogger(__name__)
 # Основная логика уведомлений
 async def notify_upcoming_matches(bot):
     try:
-        logger.info("Запуск проверки матчей...")
+        logger.info("🔍 Запуск проверки матчей...")
 
         # Подгружаем подписчиков
         subscribers = get_all_subscribers()
-        logger.info(f"Найдено подписчиков: {len(subscribers)}")
+        logger.info(f"👥 Найдено подписчиков: {len(subscribers)}")
 
         # Группировка по tier
         subs_by_tier = {"sa": [], "all": []}
         for user_id in subscribers:
             tier = get_subscriber_tier(user_id)
             subs_by_tier.setdefault(tier, []).append(user_id)
+            logger.debug(f"Пользователь {user_id} имеет подписку {tier}")
 
-        logger.info(f"Подписчиков на S/A турниры: {len(subs_by_tier.get('sa', []))}")
-        logger.info(f"Подписчиков на все турниры: {len(subs_by_tier.get('all', []))}")
+        logger.info(f"S/A подписчиков: {len(subs_by_tier.get('sa', []))}, ALL подписчиков: {len(subs_by_tier.get('all', []))}")
 
         # Получаем матчи по уровням
         matches_by_tier = {
@@ -49,27 +49,29 @@ async def notify_upcoming_matches(bot):
         }
 
         now = datetime.now(timezone.utc)
-        logger.info(f"Текущее UTC время: {now.isoformat()}")
+        logger.info(f"🕒 Текущее UTC время: {now.isoformat()}")
 
         for tier, matches in matches_by_tier.items():
+            logger.info(f"📦 Получено {len(matches)} матчей для tier={tier}")
             for match in matches:
                 match_id = match.get("id")
                 begin_at = match.get("begin_at")
 
                 logger.info(f"[{tier.upper()}] Обработка матча {match_id} | Время начала: {begin_at}")
+                logger.debug(f"Матч: {match}")
 
                 if not begin_at:
-                    logger.warning(f"У матча {match_id} нет begin_at")
+                    logger.warning(f"⚠️ У матча {match_id} нет begin_at")
                     continue
 
                 try:
                     start_time = datetime.fromisoformat(begin_at.replace("Z", "+00:00"))
                 except Exception as e:
-                    logger.error(f"Ошибка при разборе времени begin_at для матча {match_id}: {e}")
+                    logger.error(f"❌ Ошибка разбора begin_at для матча {match_id}: {e}")
                     continue
 
                 minutes_to_start = (start_time - now).total_seconds() / 60
-                logger.info(f"До начала матча {match_id}: {minutes_to_start:.2f} минут")
+                logger.info(f"⏳ До начала матча {match_id}: {minutes_to_start:.2f} мин")
 
                 if -5 <= minutes_to_start <= 5:
                     text = (
@@ -85,17 +87,17 @@ async def notify_upcoming_matches(bot):
                         already_notified = match_id in notified_set
 
                         if already_notified:
-                            logger.info(f"Пользователь {user_id} уже уведомлён о матче {match_id}")
+                            logger.info(f"🔁 Пользователь {user_id} уже уведомлён о матче {match_id}")
                             continue
 
                         try:
                             await bot.send_message(chat_id=user_id, text=text)
                             mark_notified(user_id, match_id)
-                            logger.info(f"✅ Отправлено уведомление пользователю {user_id} о матче {match_id}")
+                            logger.info(f"✅ Уведомление отправлено пользователю {user_id} о матче {match_id}")
                         except Exception as e:
-                            logger.warning(f"⚠️ Не удалось отправить сообщение пользователю {user_id}: {e}")
+                            logger.warning(f"⚠️ Ошибка отправки пользователю {user_id}: {e}")
                 else:
-                    logger.info(f"Матч {match_id} начинается не скоро (>{minutes_to_start:.2f} мин.)")
+                    logger.info(f"⏭ Матч {match_id} начинается позже (>{minutes_to_start:.2f} мин.)")
 
     except Exception as e:
         logger.error(f"🔥 Ошибка в notify_upcoming_matches: {e}")

@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    add_subscriber(user_id, tier="sa")       # подписка только на s и a tier
-    update_is_active(user_id, True)          # включаем активность
+    add_subscriber(user_id, tier="sa")
+    update_is_active(user_id, True)
     logger.info(f"/start от пользователя {user_id}")
     await update.message.reply_text(
         "Привет! Я бот для CS2 матчей. Ты автоматически подписан на уведомления о матчах топ-турниров (S и A tier).\n\n"
@@ -56,8 +56,11 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id)  # может быть 'sa' или 'all'
+    tier = get_subscriber_tier(user_id)
+    logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_live_cs2_matches(tier=tier)
+
+    logger.info(f"Найдено {len(matches)} live матчей для пользователя {user_id}")
 
     if not matches:
         await update.message.reply_text("Сейчас нет активных матчей.")
@@ -65,6 +68,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = "LIVE🔴\n"
     for match in matches:
+        logger.info(f"LIVE матч: {match['league']} | {match['tournament']} | {match['teams']}")
         msg += (
             f"\n🟣 {match['league']} | {match['tournament']}\n"
             f"🆚 {match['teams']}\n"
@@ -79,7 +83,10 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"/next от пользователя {user_id}")
 
     tier = get_subscriber_tier(user_id)
+    logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_upcoming_cs2_matches(limit=5, tier=tier)
+
+    logger.info(f"Найдено {len(matches)} предстоящих матчей для пользователя {user_id}")
 
     if not matches:
         await update.message.reply_text("Нет ближайших матчей.")
@@ -87,6 +94,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = "Upcoming matches🔜\n"
     for match in matches:
+        logger.info(f"Матч: {match['league']} | {match['tournament']} | {match['teams']} | {match['begin_at']}")
         msg += (
             f"\n🟣 {match['league']} | {match['tournament']} \n"
             f"🆚 {match['teams']}\n"
@@ -102,7 +110,10 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"/recent от пользователя {user_id}")
 
     tier = get_subscriber_tier(user_id)
+    logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_recent_cs2_matches(limit=5, tier=tier)
+
+    logger.info(f"Найдено {len(matches)} прошедших матчей для пользователя {user_id}")
 
     if not matches:
         await update.message.reply_text("Нет завершённых матчей.")
@@ -110,6 +121,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     msg = "Recent matches🏁\n"
     for match in matches:
+        logger.info(f"Прошедший матч: {match['league']} | {match['tournament']} | {match['teams']} | Победитель: {match['winner']}")
         msg += (
             f"\n🆚 {match['teams']}\n"
             f"🟣 {match['league']} | {match['tournament']}\n"
@@ -121,7 +133,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Команда /subscribe
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    add_subscriber(user_id, tier='sa')  # явно устанавливаем tier
+    add_subscriber(user_id, tier='sa')
     update_is_active(user_id, True)
     logger.info(f"/subscribe от пользователя {user_id}")
     await update.message.reply_text("Вы подписаны на уведомления о ближайших матчах S и A-tier турниров.")

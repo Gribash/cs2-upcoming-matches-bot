@@ -57,14 +57,16 @@ def get_all_subscribers() -> list[int]:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT user_id FROM subscribers WHERE is_active = 1")
         users = [row[0] for row in cursor.fetchall()]
-        logger.info(f"Получено {len(users)} активных подписчиков из базы.")
+        logger.info(f"Получено {len(users)} активных подписчиков из базы: {users}")
         return users
 
 def get_subscriber_tier(user_id: int) -> str:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT tier FROM subscribers WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
-        return row[0] if row else "sa"  # по умолчанию — только топовые турниры
+        tier = row[0] if row else "sa"
+        logger.info(f"Tier для пользователя {user_id}: {tier}")
+        return tier
 
 def was_notified(user_id: int, match_id: int) -> bool:
     with sqlite3.connect(DB_PATH) as conn:
@@ -89,5 +91,5 @@ def get_notified_match_ids(user_id: int) -> set:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT match_id FROM notified_matches WHERE user_id = ?", (user_id,))
         ids = [row[0] for row in cursor.fetchall()]
-        logger.debug(f"Получено {len(ids)} уведомлений для пользователя {user_id}")
-        return ids
+        logger.debug(f"Получено {len(ids)} уведомлений для пользователя {user_id}: {ids}")
+        return set(ids)

@@ -69,7 +69,7 @@ def extract_stream_url(streams_list: list) -> str:
 async def get_top_tournament_ids(tiers=["S", "A", "B", "C", "D"], limit=50, ttl_seconds=3600):
     now = time.time()
     if now - _tournament_cache["timestamp"] < ttl_seconds:
-        logger.info(f"Используем кэш: {len(_tournament_cache['data'])} турниров")
+        logger.info(f"Используем кэш: {_tournament_cache['data']}")
         return _tournament_cache["data"]
 
     all_ids = []
@@ -88,7 +88,7 @@ async def get_top_tournament_ids(tiers=["S", "A", "B", "C", "D"], limit=50, ttl_
                 tournaments = response.json()
                 ids = [t["id"] for t in tournaments]
                 all_ids.extend(ids)
-                logger.info(f"Получено {len(ids)} турниров со статусом '{status}'")
+                logger.info(f"Получено {len(tournaments)} турниров со статусом '{status}': {[{'id': t['id'], 'name': t.get('name'), 'tier': t.get('tier')} for t in tournaments]}")
             except httpx.HTTPStatusError as e:
                 logger.error(f"[Ошибка {e.response.status_code}] {e.request.url}")
             except httpx.RequestError as e:
@@ -126,7 +126,7 @@ async def get_upcoming_cs2_matches(limit=5, tier="sa"):
             ) or "TBD"
             stream_url = extract_stream_url(match.get("streams_list", []))
 
-            result.append({
+            formatted = {
                 "id": match["id"],
                 "name": match.get("name", teams),
                 "teams": teams,
@@ -135,7 +135,10 @@ async def get_upcoming_cs2_matches(limit=5, tier="sa"):
                 "league": match.get("league", {}).get("name", "Неизвестная лига"),
                 "tournament": match.get("tournament", {}).get("name", "Неизвестный турнир"),
                 "stream_url": stream_url
-            })
+            }
+            result.append(formatted)
+
+        logger.debug(f"Список матчей к возврату: {result}")
         return result
 
     except httpx.RequestError as e:
@@ -164,7 +167,7 @@ async def get_live_cs2_matches(tier="sa"):
 
         logger.info(f"Успешно получено {len(matches)} live матчей CS2")
 
-        return [
+        result = [
             {
                 "id": match["id"],
                 "name": match.get("name", ""),
@@ -177,6 +180,8 @@ async def get_live_cs2_matches(tier="sa"):
             }
             for match in matches
         ]
+        logger.debug(f"Live матчи: {result}")
+        return result
 
     except httpx.RequestError as e:
         logger.error(f"[Ошибка получения live матчей] {e}")
@@ -197,7 +202,7 @@ async def get_recent_cs2_matches(limit=5, tier="sa"):
 
         logger.info(f"Успешно получено {len(matches)} прошедших матчей CS2")
 
-        return [
+        result = [
             {
                 "id": match["id"],
                 "name": match.get("name", ""),
@@ -210,29 +215,9 @@ async def get_recent_cs2_matches(limit=5, tier="sa"):
             }
             for match in matches
         ]
+        logger.debug(f"Прошедшие матчи: {result}")
+        return result
 
     except httpx.RequestError as e:
         logger.error(f"[Ошибка получения прошедших матчей] {e}")
         return []
-
-async def get_mock_upcoming_matches():
-    return [
-        {
-            "id": 999001,
-            "teams": "Team Alpha vs Team Beta",
-            "league": "Test League",
-            "tournament": "Test Cup",
-            "time_until": "Начнётся через 3 мин.",
-            "stream_url": "https://twitch.tv/test_stream",
-            "begin_at": (datetime.now(timezone.utc) + timedelta(minutes=3)).isoformat()
-        },
-        {
-            "id": 999002,
-            "teams": "Team Gamma vs Team Delta",
-            "league": "Mock League",
-            "tournament": "Mock Finals",
-            "time_until": "Начнётся через 2 мин.",
-            "stream_url": "https://twitch.tv/mock2",
-            "begin_at": (datetime.now(timezone.utc) + timedelta(minutes=2)).isoformat()
-        }
-    ]
