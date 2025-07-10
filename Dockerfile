@@ -4,14 +4,23 @@ WORKDIR /app
 
 ENV PYTHONPATH=/app
 
+# Установка Supervisor и зависимостей
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends supervisor && \
+    apt-get install -y --no-install-recommends \
+        supervisor \
+        inotify-tools && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Установка Python-зависимостей
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Копируем всё содержимое проекта, включая supervisord.conf
+COPY . /app
 
-CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+# Создание директории для логов Supervisor
+RUN mkdir -p /app/logs
+
+# Запуск Supervisor с конфигом в корне проекта
+CMD ["/usr/bin/supervisord", "-c", "/app/supervisord.conf"]
