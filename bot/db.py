@@ -107,3 +107,12 @@ def is_subscriber_active(user_id: int) -> bool:
         result = row is not None and row[0] == 1
         logger.debug(f"Проверка активности пользователя {user_id}: {result}")
         return result
+    
+def update_tier(user_id: int, tier: str):
+    with sqlite3.connect(DB_PATH) as conn:
+        conn.execute(
+            "UPDATE subscribers SET tier = ? WHERE user_id = ?",
+            (tier, user_id)
+        )
+        conn.commit()
+        logger.info(f"У пользователя {user_id} обновлён уровень подписки на {tier}.")
