@@ -18,6 +18,13 @@ echo "✅ Резервная копия сохранена в $BACKUP_DIR" | tee
 cd "$DEPLOY_DIR"
 echo "⬇️ Получение изменений из Git..." | tee -a "$DEPLOY_LOG"
 git reset --hard HEAD >> "$DEPLOY_LOG" 2>&1
+
+# Удаление неотслеживаемого deploy.sh (если он не под git)
+if ! git ls-files --error-unmatch deploy.sh >/dev/null 2>&1; then
+  echo "🧹 Удаление незакоммиченного deploy.sh перед pull..." | tee -a "$DEPLOY_LOG"
+  rm -f deploy.sh
+fi
+
 git pull origin main >> "$DEPLOY_LOG" 2>&1
 
 # 3. Пересборка и перезапуск контейнера
