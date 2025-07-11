@@ -4,7 +4,7 @@ import nest_asyncio
 import logging
 from dotenv import load_dotenv
 from telegram.request import HTTPXRequest
-from telegram import Update, BotCommand
+from telegram import Update, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Импорт утилит
@@ -66,16 +66,34 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей.")
         return
 
-    msg = "LIVE🔴\n"
-    for match in matches:
-        logger.info(f"LIVE матч: {match['league']} | {match['tournament']} | {match['teams']}")
-        msg += (
-            f"\n🟣 {match['league']} | {match['tournament']}\n"
-            f"🆚 {match['teams']}\n"
-            f"🖥 {match['stream_url']}\n"
+    # Ограничим до 8 матчей
+    for match in matches[:8]:
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
+        teams = match.get("teams", "Команды неизвестны")
+        stream_url = match.get("stream_url")
+
+        logger.info(f"LIVE матч: {league} | {tournament} | {teams} | {stream_url}")
+
+        message_text = (
+            f"<b>LIVE 🔴</b>\n"
+            f"<b>Турнир:</b> {league} | {tournament}\n"
+            f"<b>Матч:</b> {teams}"
         )
 
-    await update.message.reply_text(msg)
+        if stream_url:
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text="🎥 Смотреть трансляцию", url=stream_url)]
+            ])
+        else:
+            keyboard = None
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message_text,
+            parse_mode="HTML",
+            reply_markup=keyboard
+        )
 
 # Команда /next
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -84,7 +102,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     tier = get_subscriber_tier(user_id)
     logger.info(f"Tier пользователя {user_id}: {tier}")
-    matches = await get_upcoming_cs2_matches(limit=5, tier=tier)
+    matches = await get_upcoming_cs2_matches(limit=8, tier=tier)
 
     logger.info(f"Найдено {len(matches)} предстоящих матчей для пользователя {user_id}")
 
@@ -111,7 +129,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     tier = get_subscriber_tier(user_id)
     logger.info(f"Tier пользователя {user_id}: {tier}")
-    matches = await get_recent_cs2_matches(limit=5, tier=tier)
+    matches = await get_recent_cs2_matches(limit=8, tier=tier)
 
     logger.info(f"Найдено {len(matches)} прошедших матчей для пользователя {user_id}")
 
