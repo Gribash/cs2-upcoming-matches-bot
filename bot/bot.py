@@ -122,15 +122,15 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Текст сообщения
         message_text = (
-            f"<b>Ближайший матч ⏳</b>\n"
-            f"<b>Турнир:</b> {league} | {tournament}\n"
-            f"<b>Начнётся:</b> {time_until}"
+            f"<b>⏳ Ближайший матч </b>\n"
+            f"{league} | {tournament}\n"
+            f"{time_until}"
         )
 
         # Кнопка — только если URL корректный
         if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"🟣 Смотреть: {teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
             ])
         else:
             keyboard = None
