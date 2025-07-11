@@ -120,19 +120,26 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         logger.info(f"Матч: {league} | {tournament} | {teams} | {time_until} | {stream_url}")
 
-        # Текст сообщения
-        message_text = (
-            f"<b>⏳ Ближайший матч </b>\n"
-            f"<b>Турнир</b>: {league} | {tournament}\n"
-            f"<b>Начнётся</b>: {time_until}"
-        )
-
-        # Кнопка — только если URL корректный
         if stream_url and stream_url.startswith("http"):
+            # Если трансляция доступна → компактный формат, матч в кнопке
+            message_text = (
+                f"<b>⏳ Ближайший матч</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
+                f"<b>Начнётся через:</b> {time_until}"
+            )
+
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟣 Смотреть: {teams}", url=stream_url)]
             ])
         else:
+            # Если трансляции нет → матч в тексте, кнопки нет
+            message_text = (
+                f"<b>⏳ Ближайший матч</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
+                f"<b>Матч:</b> {teams}\n"
+                f"<b>Начнётся:</b> {time_until}\n"
+                f"⚠️ <i>Трансляция отсутствует</i>"
+            )
             keyboard = None
 
         await context.bot.send_message(

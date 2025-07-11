@@ -48,9 +48,9 @@ def format_time_until(start_time_iso: str) -> str:
         if minutes > 0:
             parts.append(f"{minutes} мин.")
 
-        return "Начнётся через " + " ".join(parts) if parts else "Скоро"
+        return " ".join(parts) if parts else "Несколько минут"
     except Exception:
-        return "время неизвестно"
+        return "Время неизвестно"
 
 def extract_stream_url(streams_list: list) -> str:
     if not streams_list:
