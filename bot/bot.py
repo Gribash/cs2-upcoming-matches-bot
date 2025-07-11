@@ -129,7 +129,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"🟣 Смотреть: {teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟣 {teams}", url=stream_url)]
             ])
         else:
             # Если трансляции нет → матч в тексте, кнопки нет
@@ -137,7 +137,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 f"<b>⏳ Ближайший матч</b>\n"
                 f"<b>Турнир:</b> {league} | {tournament}\n"
                 f"<b>Матч:</b> {teams}\n"
-                f"<b>Начнётся:</b> {time_until}\n"
+                f"<b>Начнётся через:</b> {time_until}\n"
                 f"⚠️ <i>Трансляция отсутствует</i>"
             )
             keyboard = None
