@@ -127,10 +127,10 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             f"<b>Начнётся:</b> {time_until}"
         )
 
-        # Кнопка с названием матча
-        if stream_url:
+        # Кнопка — только если URL корректный
+        if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟣 Смотреть: {teams}", url=stream_url)]
             ])
         else:
             keyboard = None
