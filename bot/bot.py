@@ -123,8 +123,8 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         # Текст сообщения
         message_text = (
             f"<b>⏳ Ближайший матч </b>\n"
-            f"{league} | {tournament}\n"
-            f"{time_until}"
+            f"<b>Турнир</b>: {league} | {tournament}\n"
+            f"<b>Начнётся</b>: {time_until}"
         )
 
         # Кнопка — только если URL корректный
