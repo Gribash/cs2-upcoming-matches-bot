@@ -66,7 +66,6 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей.")
         return
 
-    # Показываем до 8 матчей
     for match in matches[:8]:
         league = match.get("league", "Без лиги")
         tournament = match.get("tournament", "Без турнира")
@@ -75,18 +74,21 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         logger.info(f"LIVE матч: {league} | {tournament} | {teams} | {stream_url}")
 
-        # Текст сообщения без названия команд
-        message_text = (
-            f"<b>LIVE 🔴</b>\n"
-            f"<b>Турнир:</b> {league} | {tournament}"
-        )
-
-        # Кнопка с названием матча
-        if stream_url:
+        if stream_url and stream_url.startswith("http"):
+            message_text = (
+                f"<b>🔴 LIVE</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}"
+            )
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"{teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
             ])
         else:
+            message_text = (
+                f"<b>🔴 LIVE</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
+                f"<b>Матч:</b> {teams}\n"
+                f"⚠️ <i>Трансляция отсутствует</i>"
+            )
             keyboard = None
 
         await context.bot.send_message(
@@ -129,7 +131,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
 
             keyboard = InlineKeyboardMarkup(inline_keyboard=[
-                [InlineKeyboardButton(text=f"🟣 {teams}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
             ])
         else:
             # Если трансляции нет → матч в тексте, кнопки нет
