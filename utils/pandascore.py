@@ -107,7 +107,7 @@ async def get_upcoming_cs2_matches(limit=5, tier="sa"):
 
     url = f"{BASE_URL}/csgo/matches/upcoming"
     params = {
-        "filter[tournament_id]": ",".join(map(str, tournament_ids)),
+        #"filter[tournament_id]": ",".join(map(str, tournament_ids)),
         "sort": "begin_at",
         "per_page": limit
     }
