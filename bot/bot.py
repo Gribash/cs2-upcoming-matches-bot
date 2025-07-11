@@ -111,17 +111,36 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет ближайших матчей.")
         return
 
-    msg = "Upcoming matches🔜\n"
     for match in matches:
-        logger.info(f"Матч: {match['league']} | {match['tournament']} | {match['teams']} | {match['begin_at']}")
-        msg += (
-            f"\n🟣 {match['league']} | {match['tournament']} \n"
-            f"🆚 {match['teams']}\n"
-            f"⏳ {match['time_until']}\n"
-            f"🖥 {match['stream_url']}\n"
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
+        teams = match.get("teams", "Команды неизвестны")
+        stream_url = match.get("stream_url")
+        time_until = match.get("time_until", "время неизвестно")
+
+        logger.info(f"Матч: {league} | {tournament} | {teams} | {time_until} | {stream_url}")
+
+        # Текст сообщения
+        message_text = (
+            f"<b>Ближайший матч ⏳</b>\n"
+            f"<b>Турнир:</b> {league} | {tournament}\n"
+            f"<b>Начнётся:</b> {time_until}"
         )
 
-    await update.message.reply_text(msg)
+        # Кнопка с названием матча
+        if stream_url:
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
+                [InlineKeyboardButton(text=f"{teams}", url=stream_url)]
+            ])
+        else:
+            keyboard = None
+
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=message_text,
+            parse_mode="HTML",
+            reply_markup=keyboard
+        )
 
 # Команда /recent
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
