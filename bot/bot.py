@@ -34,7 +34,7 @@ os.makedirs("logs", exist_ok=True)
 from utils.logging_config import setup_logging
 setup_logging()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("bot")
 
 # Команда /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):

@@ -26,7 +26,7 @@ os.makedirs("logs", exist_ok=True)
 from utils.logging_config import setup_logging
 setup_logging()
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("notifications")
 
 # Основная функция, которая вызывается циклически: отправляет уведомления о матчах
 async def notify_upcoming_matches(bot):
