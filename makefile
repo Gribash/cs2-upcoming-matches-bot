@@ -86,3 +86,6 @@ get-logs:
 
 get-data:
 	scp root@cs2-vps:/root/cs2-bot/data/subscribers.db ./subscribers.db
+
+get-cache:
+	scp -r root@cs2-vps:/root/cs2-bot/cache ./cache
