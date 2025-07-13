@@ -8,7 +8,7 @@ TOURNAMENT_CACHE_FILE = "cache/tournaments.json"
 TIER_SA = ["s", "a"]
 TIER_ALL = ["s", "a", "b", "c", "d"]
 
-def _load_tournaments_from_cache() -> List[dict]:
+def load_tournaments_from_cache() -> List[dict]:
     if not os.path.exists(TOURNAMENT_CACHE_FILE):
         return []
     with open(TOURNAMENT_CACHE_FILE, "r", encoding="utf-8") as f:
@@ -17,7 +17,7 @@ def _load_tournaments_from_cache() -> List[dict]:
 # Получаем список турниров из кэша по tier и статусу
 
 def get_tournaments(tier: Literal["sa", "all"] = "all", status_filter: List[str] = None) -> List[dict]:
-    tournaments = _load_tournaments_from_cache()
+    tournaments = load_tournaments_from_cache()
     
     allowed_tiers = TIER_SA if tier == "sa" else TIER_ALL
     allowed_tiers = [t.lower() for t in allowed_tiers]

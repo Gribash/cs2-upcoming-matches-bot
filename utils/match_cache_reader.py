@@ -14,13 +14,13 @@ TIER_ALL = ["s", "a", "b", "c", "d"]
 # Тип статуса матчей
 MatchStatus = Literal["upcoming", "live", "past"]
 
-def _load_matches_from_cache() -> List[dict]:
+def load_matches_from_cache() -> List[dict]:
     if not os.path.exists(MATCH_CACHE_FILE):
         return []
     with open(MATCH_CACHE_FILE, "r", encoding="utf-8") as f:
         return json.load(f).get("data", [])
 
-def _load_tournaments_from_cache() -> List[dict]:
+def load_tournaments_from_cache() -> List[dict]:
     if not os.path.exists(TOURNAMENT_CACHE_FILE):
         return []
     with open(TOURNAMENT_CACHE_FILE, "r", encoding="utf-8") as f:
@@ -30,8 +30,8 @@ def get_matches(status: MatchStatus, tier: Literal["sa", "all"], limit: int = 10
     """
     Возвращает отфильтрованные матчи из кэша по статусу и tier.
     """
-    matches = _load_matches_from_cache()
-    tournaments = _load_tournaments_from_cache()
+    matches = load_matches_from_cache()
+    tournaments = load_tournaments_from_cache()
     now = datetime.now(timezone.utc)
 
     # Фильтруем турниры по уровню
