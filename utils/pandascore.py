@@ -12,23 +12,27 @@ HEADERS = {
     "Authorization": f"Bearer {PANDASCORE_TOKEN}"
 }
 
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("tournaments")
 
 # Загружаем все турниры и фильтруем нужные поля.
 # Используется в tournament_cacher.py
+
+# Тиры, которые нам нужны
+TIERS = ["s", "a", "b", "c", "d"]
+TIERS_QUERY = ",".join(TIERS)
 
 async def fetch_all_tournaments():
     tournaments = []
     page = 1
     per_page = 100
 
-    # Вычисляем дату отсечки: 30 дней назад
-    cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
-    cutoff_str = cutoff_date.strftime("%Y-%m-%dT%H:%M:%SZ")  # формат: ISO 8601 UTC
-
     async with httpx.AsyncClient(timeout=30.0) as client:
         while True:
-            url = f"{BASE_URL}/tournaments?page={page}&per_page={per_page}&filter[end_at]={cutoff_str}"
+            url = (
+                f"{BASE_URL}/tournaments"
+                f"?page={page}&per_page={per_page}"
+                f"&filter[tier]={TIERS_QUERY}"
+            )
             logger.debug(f"📡 Запрос: {url}")
             r = await client.get(url, headers=HEADERS)
 
@@ -53,7 +57,7 @@ async def fetch_all_tournaments():
 
             page += 1
 
-    logger.info(f"✅ Получено {len(tournaments)} турниров после фильтрации по end_at ≥ {cutoff_str}")
+    logger.info(f"✅ Получено {len(tournaments)} турниров (по tier S/A/B/C/D)")
     return tournaments
 
 # Загружает все матчи по списку ID турниров.
