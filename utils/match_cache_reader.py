@@ -12,7 +12,7 @@ TIER_SA = ["s", "a"]
 TIER_ALL = ["s", "a", "b", "c", "d"]
 
 # Тип статуса матчей
-MatchStatus = Literal["upcoming", "live", "past"]
+MatchStatus = Literal["running", "finished", "not_started"]
 
 import json
 import os
@@ -81,15 +81,15 @@ def get_matches(status: MatchStatus, tier: Literal["sa", "all"], limit: int = 10
         except Exception:
             continue
 
-        if status == "upcoming" and start_time > now:
+        if status == "not_started" and start_time > now:
             filtered.append(match)
-        elif status == "live" and match_status == "running":
+        elif status == "running" and match_status == "running":
             filtered.append(match)
-        elif status == "past" and start_time < now:
+        elif status == "finished" and start_time < now:
             filtered.append(match)
 
     # Сортировка
-    reverse = (status == "past")
+    reverse = (status == "finished")
     filtered.sort(key=lambda m: m["begin_at"], reverse=reverse)
 
     return filtered[:limit]

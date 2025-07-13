@@ -34,7 +34,7 @@ async def notify_upcoming_matches(bot):
         logger.info("🔍 Запуск проверки матчей...")
 
         # Загружаем список всех подписчиков из базы
-        subscribers = get_all_subscribers()
+        subscribers = get_all_subscribers() or []
         logger.info(f"👥 Найдено подписчиков: {len(subscribers)}")
 
         # Группировка подписчиков по их уровню подписки (tier)
