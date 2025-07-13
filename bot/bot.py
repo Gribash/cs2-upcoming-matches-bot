@@ -159,7 +159,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/recent от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id) or "all"
+    tier = get_subscriber_tier(user_id) or "all"  # ✅ убран await
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_recent_cs2_matches(limit=8, tier=tier)
 
@@ -169,16 +169,27 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет завершённых матчей.")
         return
 
-    msg = "Recent matches🏁\n"
-    for match in matches:
-        logger.info(f"Прошедший матч: {match['league']} | {match['tournament']} | {match['teams']} | Победитель: {match['winner']}")
-        msg += (
-            f"\n🆚 {match['teams']}\n"
-            f"🟣 {match['league']} | {match['tournament']}\n"
-            f"🏆 Победитель: {match['winner']}\n"
+    # ✅ ограничим до 5 матчей
+    for match in matches[:5]:
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
+        teams = match.get("teams", "Команды неизвестны")
+        winner = match.get("winner", "Победитель неизвестен")
+
+        logger.info(f"Прошедший матч: {league} | {tournament} | {teams} | Победитель: {winner}")
+
+        msg = (
+            f"<b>🏁 Завершённый матч</b>\n"
+            f"<b>Турнир:</b> {league} | {tournament}\n"
+            f"<b>Матч:</b> {teams}\n"
+            f"🏆 <b>Победитель:</b> {winner}"
         )
 
-    await update.message.reply_text(msg)
+        await context.bot.send_message(
+            chat_id=user_id,
+            text=msg,
+            parse_mode="HTML"
+        )
 
 # Команда /subscribe
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -220,7 +231,7 @@ async def set_bot_commands(app):
 
 # Главный запуск
 async def main():
-    request = HTTPXRequest(connect_timeout=15.0, read_timeout=20.0)
+    request = HTTPXRequest(connect_timeout=15.0, read_timeout=30.0)
     app = ApplicationBuilder().token(TELEGRAM_BOT_TOKEN).request(request).build()
 
     app.add_handler(CommandHandler("start", start))

@@ -82,4 +82,4 @@ clear-logs:
 	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH)/logs && for f in *.log *.err.log; do :> $$f; done'
 
 get-logs:
-	ssh $(SSH_USER)@$(SSH_HOST) 'scp -r /root/cs2-bot/logs ./logs'
+	scp -r root@cs2-vps:/root/cs2-bot/logs ./logs
