@@ -42,7 +42,9 @@ async def update_tournaments_loop():
 
         await asyncio.sleep(INTERVAL_SECONDS)
 
-
 # --- Запуск напрямую ---
 if __name__ == "__main__":
+    from utils.logging_config import setup_logging
+    setup_logging()
+    tournaments_logger.info("🚀 Запуск фонового обновления турниров")
     asyncio.run(update_tournaments_loop())

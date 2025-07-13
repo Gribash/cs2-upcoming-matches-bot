@@ -74,4 +74,9 @@ async def loop():
         await asyncio.sleep(INTERVAL_SECONDS)
 
 if __name__ == "__main__":
-    asyncio.run(loop())
+    from utils.logging_config import setup_logging
+    setup_logging()
+    logger = logging.getLogger("matches")
+
+    logger.info("🚀 Однократный запуск match_cacher")
+    asyncio.run(update_match_cache())
