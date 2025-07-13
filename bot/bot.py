@@ -9,6 +9,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Импорт утилит
 from utils.match_cache_reader import get_matches
+from utils.tournament_cache_reader import get_tournament_name_by_id
 from db import (
     init_db,
     add_subscriber,
@@ -81,6 +82,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 # Команда /next
+
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
@@ -96,7 +98,8 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        tournament = match.get("tournament_id", "Без турнира")
+        tournament_id = match.get("tournament_id")
+        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
         teams = match.get("teams", "Команды неизвестны")
         stream_url = match.get("stream_url")
         time_until = match.get("time_until", "время неизвестно")
@@ -104,7 +107,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         if stream_url and stream_url.startswith("http"):
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир ID:</b> {tournament}\n"
+                f"<b>Турнир:</b> {tournament_name}\n"
                 f"<b>Начнётся через:</b> {time_until}"
             )
             keyboard = InlineKeyboardMarkup([
@@ -113,7 +116,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир ID:</b> {tournament}\n"
+                f"<b>Турнир:</b> {tournament_name}\n"
                 f"<b>Матч:</b> {teams}\n"
                 f"<b>Начнётся через:</b> {time_until}\n"
                 f"⚠️ <i>Трансляция отсутствует</i>"
@@ -126,6 +129,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML",
             reply_markup=keyboard
         )
+
 
 # Команда /recent
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):

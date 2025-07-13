@@ -36,3 +36,10 @@ def get_tournaments(tier: Literal["sa", "all"] = "all", status_filter: List[str]
         filtered.append(t)
 
     return filtered
+
+def get_tournament_name_by_id(tournament_id: int) -> str | None:
+    tournaments = load_tournaments_from_cache()
+    for t in tournaments:
+        if t.get("id") == tournament_id:
+            return t.get("name")
+    return None
