@@ -25,26 +25,21 @@ tournaments_logger.addHandler(file_handler)
 CACHE_FILENAME = "tournaments.json"
 INTERVAL_SECONDS = 3600  # запуск раз в час
 
-# --- Основная логика обновления турниров ---
-async def update_tournaments_loop():
-    while True:
-        try:
-            tournaments_logger.info("⏳ Запуск обновления турниров...")
+# --- Однократное обновление турниров ---
+async def update_tournaments_once():
+    try:
+        tournaments_logger.info("⏳ Запуск обновления турниров...")
 
-            tournaments = await fetch_all_tournaments()
-            tournaments_logger.info(f"📥 Загружено турниров: {len(tournaments)}")
+        tournaments = await fetch_all_tournaments()
+        tournaments_logger.info(f"📥 Загружено турниров: {len(tournaments)}")
 
-            write_json_to_cache(CACHE_FILENAME, tournaments)
-            tournaments_logger.info(f"✅ Кэш турниров обновлён: {len(tournaments)} записей")
+        write_json_to_cache(CACHE_FILENAME, tournaments)
+        tournaments_logger.info(f"✅ Кэш турниров обновлён: {len(tournaments)} записей")
 
-        except Exception as e:
-            tournaments_logger.exception(f"🔥 Ошибка при обновлении турниров: {e}")
+    except Exception as e:
+        tournaments_logger.exception(f"🔥 Ошибка при обновлении турниров: {e}")
 
-        await asyncio.sleep(INTERVAL_SECONDS)
-
-# --- Запуск напрямую ---
+# --- Точка входа ---
 if __name__ == "__main__":
-    from utils.logging_config import setup_logging
-    setup_logging()
-    tournaments_logger.info("🚀 Запуск фонового обновления турниров")
-    asyncio.run(update_tournaments_loop())
+    tournaments_logger.info("🚀 Однократный запуск tournament_cacher")
+    asyncio.run(update_tournaments_once())

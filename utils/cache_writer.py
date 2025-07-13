@@ -24,6 +24,8 @@ def write_json_to_cache(filename: str, data: List[Dict]) -> None:
     try:
         with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, ensure_ascii=False, indent=2, default=safe_serialize)
+            f.flush()
+            os.fsync(f.fileno())
         print(f"✅ Кэш успешно сохранён в {path}")
     except Exception as e:
         print(f"❌ Ошибка сериализации или записи в кэш: {e}")
