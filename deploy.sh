@@ -33,3 +33,4 @@ docker-compose down >> "$DEPLOY_LOG" 2>&1
 docker-compose up --build -d >> "$DEPLOY_LOG" 2>&1
 
 echo "✅ Деплой завершён успешно!" | tee -a "$DEPLOY_LOG"
+echo "📂 docker-compose.yml: volumes = $(grep 'volumes:' -A5 docker-compose.yml)" | tee -a "$DEPLOY_LOG"
