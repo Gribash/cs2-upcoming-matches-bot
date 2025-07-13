@@ -13,13 +13,17 @@ def init_db():
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
-    # Таблица подписчиков с типом подписки и активностью
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS subscribers (
             user_id INTEGER PRIMARY KEY,
-            tier TEXT DEFAULT 'sa',
-            is_active INTEGER DEFAULT 1
+            tier TEXT DEFAULT 'sa' CHECK(tier IN ('sa', 'all')),
+            is_active INTEGER DEFAULT 1,
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         );
+    """)
+    
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_subscribers_active ON subscribers (is_active);
     """)
 
     # Таблица уведомлений о матчах
@@ -37,14 +41,23 @@ def init_db():
     logger.info("База данных и таблицы инициализированы.")
 
 def add_subscriber(user_id: int, tier: str = "sa"):
-    with sqlite3.connect(DB_PATH) as conn:
-        conn.execute(
-            "INSERT INTO subscribers (user_id, tier, is_active) VALUES (?, ?, 1) "
-            "ON CONFLICT(user_id) DO UPDATE SET tier = excluded.tier, is_active = 1",
-            (user_id, tier)
-        )
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        c = conn.cursor()
+
+        c.execute("""
+            INSERT INTO subscribers (user_id, tier, is_active)
+            VALUES (?, ?, 1)
+            ON CONFLICT(user_id) DO UPDATE SET
+                tier = excluded.tier,
+                is_active = 1
+        """, (user_id, tier))
+
         conn.commit()
-        logger.info(f"Пользователь {user_id} добавлен/обновлён с подпиской '{tier}'.")
+        conn.close()
+        logger.info(f"Подписчик {user_id} добавлен/обновлён с tier={tier}")
+    except Exception as e:
+        logger.error(f"Ошибка при добавлении/обновлении подписчика {user_id}: {e}")
 
 def remove_subscriber(user_id: int):
     with sqlite3.connect(DB_PATH) as conn:

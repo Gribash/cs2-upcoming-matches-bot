@@ -21,6 +21,8 @@ from db import (
 # Загрузка переменных окружения
 load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
+if not TELEGRAM_BOT_TOKEN:
+    raise RuntimeError("Не задан TELEGRAM_BOT_TOKEN в .env")
 
 # Инициализация базы данных
 init_db()
@@ -52,11 +54,12 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # Команда /live
+
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id)
+    tier = await get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_live_cs2_matches(tier=tier)
 
@@ -103,7 +106,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id)
+    tier = await get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_upcoming_cs2_matches(limit=8, tier=tier)
 
@@ -156,7 +159,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/recent от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id)
+    tier = await get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_recent_cs2_matches(limit=8, tier=tier)
 
@@ -180,10 +183,11 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Команда /subscribe
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
-    add_subscriber(user_id, tier='sa')
-    update_is_active(user_id, True)
+    add_subscriber(user_id, tier="sa")
     logger.info(f"/subscribe от пользователя {user_id}")
-    await update.message.reply_text("Вы подписаны на уведомления о ближайших матчах S и A-tier турниров.")
+    await update.message.reply_text(
+        "Вы подписаны на уведомления о ближайших матчах S и A-tier турниров."
+    )
 
 # Команда /unsubscribe
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -196,10 +200,10 @@ async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def subscribe_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="all")
-    update_is_active(user_id, True)
-    update_tier(user_id, "all")
     logger.info(f"/subscribe_all от пользователя {user_id}")
-    await update.message.reply_text("Теперь вы подписаны на все матчи (включая B, C и D турниры).")
+    await update.message.reply_text(
+        "Теперь вы подписаны на все матчи (включая B, C и D турниры)."
+    )
 
 # Установка команд
 async def set_bot_commands(app):
