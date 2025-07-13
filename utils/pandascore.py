@@ -24,11 +24,12 @@ async def fetch_all_tournaments():
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         while True:
-            url = f"{BASE_URL}/tournaments?page={page}&per_page={per_page}"
+            url = f"{BASE_URL}/csgo/tournaments?page={page}&per_page={per_page}"
             r = await client.get(url, headers=HEADERS)
             if r.status_code != 200:
                 logger.warning(f"Ошибка загрузки турниров: {r.status_code}")
                 break
+
             data = r.json()
             if not data:
                 break
