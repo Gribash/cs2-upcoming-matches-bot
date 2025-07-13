@@ -93,3 +93,91 @@ cs2-matches-bot/
 ├── requirements.txt
 ├── README.md
 ```
+
+utils/ README
+
+This folder contains all utility modules used for the CS2 bot project. Each file is responsible for a specific part of the caching, API interaction, filtering, or logging infrastructure.
+
+Files Overview
+
+pandascore.py
+
+Purpose:
+	•	Handles direct async interaction with the PandaScore API.
+	•	Loads tournaments, matches, teams, etc.
+
+tournament_cacher.py
+
+Purpose:
+	•	Fetches all active (upcoming/running) tournaments.
+	•	Filters only relevant tournaments.
+	•	Caches to data/tournaments_cache.json.
+	•	Run frequency: every hour.
+
+match_cacher.py
+
+Purpose:
+	•	Loads all matches for all cached tournaments.
+	•	Saves to data/matches_cache.json.
+	•	Run frequency: every 10 minutes.
+
+refresh_cache.py
+
+Purpose:
+	•	Calls tournament_cacher and match_cacher sequentially.
+	•	Can be scheduled via cron or run via Supervisor.
+
+tournament_cache.py
+
+Purpose:
+	•	Reads cached tournaments from JSON.
+	•	Provides list or dictionary access.
+	•	Used by match_cacher and Telegram bot commands.
+
+match_cache.py
+
+Purpose:
+	•	Reads cached matches from JSON.
+	•	Returns full list of matches for further filtering.
+
+match_cache_filter.py
+
+Purpose:
+	•	Filters cached matches by:
+	•	Status: upcoming, live, finished
+	•	Tier: sa, all
+	•	Used in Telegram bot commands (/next, /live, /recent).
+
+cache_writer.py
+
+Purpose:
+	•	Contains utility function write_cache(data, filename) to save any dict/list to JSON.
+	•	Prevents code duplication in cache-related modules.
+
+logging_config.py
+
+Purpose:
+	•	Sets up unified logging across the project.
+	•	Creates and configures:
+	•	logs/bot.log: bot command activity
+	•	logs/notifications.log: match notifications
+	•	logs/telegram_http.log: Telegram API requests
+	•	Used by bot.py, notifications.py, etc.
+
+Summary Table
+
+File	Role	Schedule / Usage
+pandascore.py	API interaction layer	Called by cacher modules
+tournament_cacher.py	Tournament data caching	Every 1 hour
+match_cacher.py	Match data caching	Every 10 minutes
+refresh_cache.py	Sequential cache update	Used by cron / Supervisor
+tournament_cache.py	Load cached tournaments	Used in match cacher/bot
+match_cache.py	Load cached matches	Used in bot/notifications
+match_cache_filter.py	Filter matches by tier and status	Used in bot commands
+cache_writer.py	Write cache to file	Used by cacher modules
+logging_config.py	Unified logging setup	Used across all modules
+
+
+⸻
+
+This structure helps to keep code modular, testable, and easy to maintain.

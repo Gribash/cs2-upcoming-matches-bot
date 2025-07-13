@@ -8,7 +8,7 @@ from telegram import Update, BotCommand, InlineKeyboardMarkup, InlineKeyboardBut
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 
 # Импорт утилит
-from utils.match_cache_reader import get_matches
+from utils.pandascore import get_upcoming_cs2_matches, get_recent_cs2_matches, get_live_cs2_matches
 from db import (
     init_db,
     add_subscriber,
@@ -27,9 +27,13 @@ if not TELEGRAM_BOT_TOKEN:
 # Инициализация базы данных
 init_db()
 
+# Убедись, что папка для логов существует
+os.makedirs("logs", exist_ok=True)
+
 # Настройка логирования
 from utils.logging_config import setup_logging
 setup_logging()
+
 logger = logging.getLogger("bot")
 
 # Команда /start
@@ -44,13 +48,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     )
 
 # Команда /live
+
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
 
     tier = get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
-    matches = get_matches(status="live", tier=tier, limit=8)
+    matches = await get_live_cs2_matches(tier=tier)
 
     logger.info(f"Найдено {len(matches)} live матчей для пользователя {user_id}")
 
@@ -58,19 +63,29 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей.")
         return
 
-    for match in matches:
-        tournament = match.get("tournament_id", "Без турнира")
+    for match in matches[:8]:
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
         teams = match.get("teams", "Команды неизвестны")
         stream_url = match.get("stream_url")
 
-        message_text = f"<b>🔴 LIVE</b>\n<b>Турнир ID:</b> {tournament}"
+        logger.info(f"LIVE матч: {league} | {tournament} | {teams} | {stream_url}")
 
         if stream_url and stream_url.startswith("http"):
-            keyboard = InlineKeyboardMarkup([
+            message_text = (
+                f"<b>🔴 LIVE</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}"
+            )
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
             ])
         else:
-            message_text += f"\n<b>Матч:</b> {teams}\n⚠️ <i>Трансляция отсутствует</i>"
+            message_text = (
+                f"<b>🔴 LIVE</b>\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
+                f"<b>Матч:</b> {teams}\n"
+                f"⚠️ <i>Трансляция отсутствует</i>"
+            )
             keyboard = None
 
         await context.bot.send_message(
@@ -87,7 +102,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     tier = get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
-    matches = get_matches(status="upcoming", tier=tier, limit=8)
+    matches = await get_upcoming_cs2_matches(limit=8, tier=tier)
 
     logger.info(f"Найдено {len(matches)} предстоящих матчей для пользователя {user_id}")
 
@@ -96,24 +111,30 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        tournament = match.get("tournament_id", "Без турнира")
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
         teams = match.get("teams", "Команды неизвестны")
         stream_url = match.get("stream_url")
         time_until = match.get("time_until", "время неизвестно")
 
+        logger.info(f"Матч: {league} | {tournament} | {teams} | {time_until} | {stream_url}")
+
         if stream_url and stream_url.startswith("http"):
+            # Если трансляция доступна → компактный формат, матч в кнопке
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир ID:</b> {tournament}\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
                 f"<b>Начнётся через:</b> {time_until}"
             )
-            keyboard = InlineKeyboardMarkup([
+
+            keyboard = InlineKeyboardMarkup(inline_keyboard=[
                 [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
             ])
         else:
+            # Если трансляции нет → матч в тексте, кнопки нет
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир ID:</b> {tournament}\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
                 f"<b>Матч:</b> {teams}\n"
                 f"<b>Начнётся через:</b> {time_until}\n"
                 f"⚠️ <i>Трансляция отсутствует</i>"
@@ -132,9 +153,9 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/recent от пользователя {user_id}")
 
-    tier = get_subscriber_tier(user_id) or "all"
+    tier = get_subscriber_tier(user_id) or "all"  # ✅ убран await
     logger.info(f"Tier пользователя {user_id}: {tier}")
-    matches = get_matches(status="past", tier=tier, limit=8)
+    matches = await get_recent_cs2_matches(limit=8, tier=tier)
 
     logger.info(f"Найдено {len(matches)} прошедших матчей для пользователя {user_id}")
 
@@ -142,16 +163,20 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет завершённых матчей.")
         return
 
+    # ✅ ограничим до 5 матчей
     for match in matches[:5]:
-        tournament = match.get("tournament_id", "Без турнира")
+        league = match.get("league", "Без лиги")
+        tournament = match.get("tournament", "Без турнира")
         teams = match.get("teams", "Команды неизвестны")
-        winner = match.get("winner_id", "Победитель неизвестен")
+        winner = match.get("winner", "Победитель неизвестен")
+
+        logger.info(f"Прошедший матч: {league} | {tournament} | {teams} | Победитель: {winner}")
 
         msg = (
             f"<b>🏁 Завершённый матч</b>\n"
-            f"<b>Турнир ID:</b> {tournament}\n"
+            f"<b>Турнир:</b> {league} | {tournament}\n"
             f"<b>Матч:</b> {teams}\n"
-            f"🏆 <b>Победитель ID:</b> {winner}"
+            f"🏆 <b>Победитель:</b> {winner}"
         )
 
         await context.bot.send_message(
