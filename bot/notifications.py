@@ -49,8 +49,8 @@ async def notify_upcoming_matches(bot):
 
         # Загружаем список предстоящих матчей отдельно для каждой группы tier
         matches_by_tier = {
-            "sa": await get_matches(status="upcoming", limit=10, tier="sa"),
-             "all": await get_matches(status="upcoming", limit=10, tier="all")
+             "sa": get_matches(limit=10, tier="sa"),
+             "all": get_matches(limit=10, tier="all")
         }
 
         # Получаем текущее UTC-время
