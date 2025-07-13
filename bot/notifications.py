@@ -14,7 +14,7 @@ from db import (
 )
 
 # Импорт функции получения предстоящих матчей
-from utils.pandascore import get_upcoming_cs2_matches
+from utils.match_cache_reader import get_matches
 
 # Загрузка переменных окружения из .env
 load_dotenv()
@@ -49,8 +49,8 @@ async def notify_upcoming_matches(bot):
 
         # Загружаем список предстоящих матчей отдельно для каждой группы tier
         matches_by_tier = {
-            "sa": await get_upcoming_cs2_matches(limit=10, tier="sa"),
-            "all": await get_upcoming_cs2_matches(limit=10, tier="all")
+            "sa": await get_matches(limit=10, tier="sa"),
+            "all": await get_matches(limit=10, tier="all")
         }
 
         # Получаем текущее UTC-время
