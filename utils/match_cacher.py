@@ -7,19 +7,16 @@ from dotenv import load_dotenv
 from utils.pandascore import fetch_all_matches, extract_stream_url, format_time_until
 from utils.tournament_cache_reader import load_tournaments_from_cache
 from utils.cache_writer import write_json_to_cache
+from utils.logging_config import setup_logging
 
 # Загрузка .env
 load_dotenv()
 
 # Настройка логирования
 os.makedirs("logs", exist_ok=True)
+setup_logging()
 logger = logging.getLogger("matches")
 logger.setLevel(logging.INFO)
-
-file_handler = logging.FileHandler("logs/matches.log")
-formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
 
 # Параметры
 CACHE_FILENAME = "matches.json"
@@ -67,16 +64,12 @@ async def update_match_cache():
     except Exception as e:
         logger.exception(f"🔥 Ошибка при обновлении матчей: {e}")
 
-# Циклический запуск
-async def loop():
+# Цикл с немедленным первым запуском
+async def run_periodic_update():
     while True:
         await update_match_cache()
         await asyncio.sleep(INTERVAL_SECONDS)
 
 if __name__ == "__main__":
-    from utils.logging_config import setup_logging
-    setup_logging()
-    logger = logging.getLogger("matches")
-
-    logger.info("🚀 Однократный запуск match_cacher")
-    asyncio.run(update_match_cache())
+    logger.info("🚀 Запуск фонового обновления матчей (цикл)")
+    asyncio.run(run_periodic_update())
