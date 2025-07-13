@@ -23,41 +23,42 @@ TIERS_QUERY = ",".join(TIERS)
 
 async def fetch_all_tournaments():
     tournaments = []
-    page = 1
-    per_page = 100
+    endpoints = ["running", "upcoming"]
 
     async with httpx.AsyncClient(timeout=30.0) as client:
-        while True:
-            url = (
-                f"{BASE_URL}/tournaments"
-                f"?page={page}&per_page={per_page}"
-                f"&filter[tier]={TIERS_QUERY}"
-            )
-            logger.debug(f"📡 Запрос: {url}")
-            r = await client.get(url, headers=HEADERS)
+        for endpoint in endpoints:
+            page = 1
+            while True:
+                url = (
+                    f"{BASE_URL}/tournaments/{endpoint}"
+                    f"?page={page}&per_page=100"
+                    f"&filter[tier]={TIERS_QUERY}"
+                )
+                logger.debug(f"📡 Запрос: {url}")
+                r = await client.get(url, headers=HEADERS)
 
-            if r.status_code != 200:
-                logger.warning(f"⚠️ Ошибка загрузки турниров (страница {page}): {r.status_code}")
-                break
+                if r.status_code != 200:
+                    logger.warning(f"⚠️ Ошибка при запросе {endpoint} (стр. {page}): {r.status_code}")
+                    break
 
-            data = r.json()
-            if not data:
-                break
+                data = r.json()
+                if not data:
+                    break
 
-            for t in data:
-                tournaments.append({
-                    "id": t["id"],
-                    "name": t.get("name"),
-                    "league_id": t.get("league_id"),
-                    "tier": t.get("tier", "unknown"),
-                    "status": t.get("status", "unknown"),
-                    "begin_at": t.get("begin_at"),
-                    "end_at": t.get("end_at")
-                })
+                for t in data:
+                    tournaments.append({
+                        "id": t["id"],
+                        "name": t.get("name"),
+                        "league_id": t.get("league_id"),
+                        "tier": t.get("tier", "unknown"),
+                        "status": t.get("status", endpoint),  # либо running, либо upcoming
+                        "begin_at": t.get("begin_at"),
+                        "end_at": t.get("end_at")
+                    })
 
-            page += 1
+                page += 1
 
-    logger.info(f"✅ Получено {len(tournaments)} турниров (по tier S/A/B/C/D)")
+    logger.info(f"✅ Загружено {len(tournaments)} турниров (running + upcoming) с фильтром по tier")
     return tournaments
 
 # Загружает все матчи по списку ID турниров.
