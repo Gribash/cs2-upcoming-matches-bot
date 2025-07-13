@@ -1,7 +1,7 @@
 import os
 import logging
 import httpx
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -22,12 +22,18 @@ async def fetch_all_tournaments():
     page = 1
     per_page = 100
 
+    # Вычисляем дату отсечки: 30 дней назад
+    cutoff_date = datetime.now(timezone.utc) - timedelta(days=30)
+    cutoff_str = cutoff_date.strftime("%Y-%m-%dT%H:%M:%SZ")  # формат: ISO 8601 UTC
+
     async with httpx.AsyncClient(timeout=30.0) as client:
         while True:
-            url = f"{BASE_URL}/csgo/tournaments?page={page}&per_page={per_page}"
+            url = f"{BASE_URL}/tournaments?page={page}&per_page={per_page}&filter[end_at]={cutoff_str}"
+            logger.debug(f"📡 Запрос: {url}")
             r = await client.get(url, headers=HEADERS)
+
             if r.status_code != 200:
-                logger.warning(f"Ошибка загрузки турниров: {r.status_code}")
+                logger.warning(f"⚠️ Ошибка загрузки турниров (страница {page}): {r.status_code}")
                 break
 
             data = r.json()
@@ -41,10 +47,13 @@ async def fetch_all_tournaments():
                     "league_id": t.get("league_id"),
                     "tier": t.get("tier", "unknown"),
                     "status": t.get("status", "unknown"),
+                    "begin_at": t.get("begin_at"),
+                    "end_at": t.get("end_at")
                 })
 
             page += 1
 
+    logger.info(f"✅ Получено {len(tournaments)} турниров после фильтрации по end_at ≥ {cutoff_str}")
     return tournaments
 
 # Загружает все матчи по списку ID турниров.
