@@ -59,7 +59,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
 
-    tier = await get_subscriber_tier(user_id) or "all"
+    tier = get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_live_cs2_matches(tier=tier)
 
@@ -106,7 +106,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
 
-    tier = await get_subscriber_tier(user_id) or "all"
+    tier = get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_upcoming_cs2_matches(limit=8, tier=tier)
 
@@ -159,7 +159,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/recent от пользователя {user_id}")
 
-    tier = await get_subscriber_tier(user_id) or "all"
+    tier = get_subscriber_tier(user_id) or "all"
     logger.info(f"Tier пользователя {user_id}: {tier}")
     matches = await get_recent_cs2_matches(limit=8, tier=tier)
 
