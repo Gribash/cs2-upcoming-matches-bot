@@ -22,12 +22,9 @@ load_dotenv()
 # Создание папки для логов, если она отсутствует
 os.makedirs("logs", exist_ok=True)
 
-# Настройка логирования в файл logs/notifications.log
-logging.basicConfig(
-    filename="logs/notifications.log",
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(message)s",
-)
+# Настройка логирования
+from utils.logging_config import setup_logging
+setup_logging()
 
 logger = logging.getLogger(__name__)
 

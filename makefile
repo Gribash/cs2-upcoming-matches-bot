@@ -83,3 +83,6 @@ clear-logs:
 
 get-logs:
 	scp -r root@cs2-vps:/root/cs2-bot/logs ./logs
+
+get-data:
+	scp root@cs2-vps:/root/cs2-bot/data/subscribers.db ./subscribers.db
