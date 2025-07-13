@@ -14,22 +14,47 @@ TIER_ALL = ["s", "a", "b", "c", "d"]
 # Тип статуса матчей
 MatchStatus = Literal["upcoming", "live", "past"]
 
-def load_matches_from_cache() -> List[dict]:
-    if not os.path.exists(MATCH_CACHE_FILE):
-        return []
-    with open(MATCH_CACHE_FILE, "r", encoding="utf-8") as f:
-        return json.load(f).get("data", [])
+import json
+import os
+import logging
 
-def load_tournaments_from_cache() -> List[dict]:
-    if not os.path.exists(TOURNAMENT_CACHE_FILE):
+logger = logging.getLogger("match_reader")
+
+def load_matches_from_cache(cache_path="cache/matches.json"):
+    if not os.path.exists(cache_path):
+        logger.warning(f"⚠️ Файл кэша матчей {cache_path} не найден")
         return []
-    with open(TOURNAMENT_CACHE_FILE, "r", encoding="utf-8") as f:
-        return json.load(f)
+
+    if os.path.getsize(cache_path) == 0:
+        logger.warning(f"⚠️ Файл кэша матчей {cache_path} пуст")
+        return []
+
+    try:
+        with open(cache_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"❌ Ошибка при загрузке JSON из {cache_path}: {e}")
+        return []
+
+def load_tournaments_from_cache(cache_path="cache/tournaments.json"):
+    if not os.path.exists(cache_path):
+        logger.warning(f"⚠️ Файл кэша турниров {cache_path} не найден")
+        return []
+
+    if os.path.getsize(cache_path) == 0:
+        logger.warning(f"⚠️ Файл кэша турниров {cache_path} пуст")
+        return []
+
+    try:
+        with open(cache_path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except Exception as e:
+        logger.error(f"❌ Ошибка при загрузке JSON из {cache_path}: {e}")
+        return []
+
+# Получает список матчей из кэша по статусу и tier
 
 def get_matches(status: MatchStatus, tier: Literal["sa", "all"], limit: int = 10) -> List[dict]:
-    """
-    Возвращает отфильтрованные матчи из кэша по статусу и tier.
-    """
     matches = load_matches_from_cache()
     tournaments = load_tournaments_from_cache()
     now = datetime.now(timezone.utc)
