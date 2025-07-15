@@ -66,7 +66,6 @@ async def update_match_cache():
             })
 
         cache_payload = {
-            "updated_at": datetime.now(timezone.utc).isoformat(),
             "matches": simplified
         }
 

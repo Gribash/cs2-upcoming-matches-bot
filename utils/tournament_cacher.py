@@ -42,7 +42,6 @@ async def update_tournament_cache():
         ]
 
         cache_payload = {
-            "updated_at": datetime.now(timezone.utc).isoformat(),
             "tournaments": simplified
         }
 
