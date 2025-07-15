@@ -86,11 +86,14 @@ async def notify_upcoming_matches(bot):
                 # Отправляем уведомление, если матч скоро начнётся (в пределах [-6, +5] минут)
                 if -6 <= minutes_to_start <= 5:
                     # Получаем информацию для форматирования сообщения
-                    league = match.get("league", "Без лиги")
-                    tournament = match.get("tournament", "Без турнира")
-                    teams = match.get("teams", "Команды неизвестны")
-                    stream_url = match.get("stream_url")
+                    league = match.get("league_name", "Без лиги")
+                    tournament = match.get("tournament_name", "Без турнира")
                     time_until = match.get("time_until", "время неизвестно")
+                    stream_url = match.get("stream_url")
+
+                    teams = " vs ".join(
+                        team.get("acronym") or team.get("name") for team in match.get("opponents", [])
+                    ) or "Команды неизвестны"
 
                     # Формируем сообщение и кнопку
                     if stream_url and stream_url.startswith("http"):

@@ -40,22 +40,29 @@ async def update_match_cache():
 
         simplified = []
         for m in matches_raw:
-            teams = " vs ".join(
-                [t["opponent"]["name"] for t in m.get("opponents", []) if t.get("opponent")]
-            ) or "TBD"
-
-            stream_url = extract_stream_url(m.get("streams", []))
             begin_at = m.get("begin_at")
+            stream_url = extract_stream_url(m.get("streams", []))
+
+            opponents = [
+                {
+                    "name": opp["opponent"].get("name"),
+                    "acronym": opp["opponent"].get("acronym")
+                }
+                for opp in m.get("opponents", [])
+                if opp.get("opponent") and opp["opponent"].get("name")
+            ]
 
             simplified.append({
                 "id": m.get("id"),
                 "tournament_id": m.get("tournament_id"),
-                "teams": teams,
+                "tournament_name": m.get("tournament", {}).get("name"),
+                "league_name": m.get("league", {}).get("name"),
                 "begin_at": begin_at,
                 "time_until": format_time_until(begin_at) if begin_at else None,
                 "status": m.get("status"),
                 "stream_url": stream_url,
                 "winner_id": m.get("winner_id"),
+                "opponents": opponents
             })
 
         write_json_to_cache(CACHE_FILENAME, simplified)

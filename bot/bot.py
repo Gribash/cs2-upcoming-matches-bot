@@ -60,11 +60,15 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        tournament = match.get("tournament_id", "Без турнира")
-        teams = match.get("teams", "Команды неизвестны")
+        tournament_id = match.get("tournament_id")
+        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
         stream_url = match.get("stream_url")
 
-        message_text = f"<b>🔴 LIVE</b>\n<b>Турнир ID:</b> {tournament}"
+        teams = " vs ".join(
+            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
+        ) or "Команды неизвестны"
+
+        message_text = f"<b>🔴 LIVE</b>\n<b>Турнир:</b> {tournament_name}"
 
         if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup([
@@ -82,7 +86,6 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
 
 # Команда /next
-
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
@@ -100,9 +103,12 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     for match in matches:
         tournament_id = match.get("tournament_id")
         tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
-        teams = match.get("teams", "Команды неизвестны")
         stream_url = match.get("stream_url")
         time_until = match.get("time_until", "время неизвестно")
+
+        teams = " vs ".join(
+            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
+        ) or "Команды неизвестны"
 
         if stream_url and stream_url.startswith("http"):
             message_text = (
@@ -130,7 +136,6 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             reply_markup=keyboard
         )
 
-
 # Команда /recent
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -147,13 +152,17 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches[:5]:
-        tournament = match.get("tournament_id", "Без турнира")
-        teams = match.get("teams", "Команды неизвестны")
+        tournament_id = match.get("tournament_id")
+        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
         winner = match.get("winner_id", "Победитель неизвестен")
+
+        teams = " vs ".join(
+            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
+        ) or "Команды неизвестны"
 
         msg = (
             f"<b>🏁 Завершённый матч</b>\n"
-            f"<b>Турнир ID:</b> {tournament}\n"
+            f"<b>Турнир:</b> {tournament_name}\n"
             f"<b>Матч:</b> {teams}\n"
             f"🏆 <b>Победитель ID:</b> {winner}"
         )
