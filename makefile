@@ -82,10 +82,13 @@ clear-logs:
 	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH)/logs && for f in *.log *.err.log; do :> $$f; done'
 
 get-logs:
+	rm -rf ./logs
 	scp -r root@cs2-vps:/root/cs2-bot/logs ./logs
 
 get-data:
+	rm -f ./subscribers.db
 	scp root@cs2-vps:/root/cs2-bot/data/subscribers.db ./subscribers.db
 
 get-cache:
+	rm -rf ./cache
 	scp -r root@cs2-vps:/root/cs2-bot/cache ./cache

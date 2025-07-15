@@ -13,9 +13,7 @@ def load_tournaments_from_cache() -> List[dict]:
         return []
     with open(TOURNAMENT_CACHE_FILE, "r", encoding="utf-8") as f:
         data = json.load(f)
-        if isinstance(data, dict) and "tournaments" in data:
-            return data["tournaments"]
-        return []
+        return data.get("tournaments", [])
 
 # Получаем список турниров из кэша по tier и статусу
 def get_tournaments(tier: Literal["sa", "all"] = "all", status_filter: List[str] = None) -> List[dict]:
