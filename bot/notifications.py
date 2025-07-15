@@ -20,6 +20,7 @@ load_dotenv()
 os.makedirs("logs", exist_ok=True)
 setup_logging()
 logger = logging.getLogger("notifications")
+logger.setLevel(logging.WARNING)
 
 async def notify_upcoming_matches(bot):
     try:
