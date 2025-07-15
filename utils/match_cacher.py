@@ -27,7 +27,7 @@ async def update_match_cache():
         logger.info("🔄 Загрузка матчей по кэшированным турнирам...")
 
         tournaments = load_tournaments_from_cache()
-        tournament_ids = [t["id"] for t in tournaments if t.get("status") in ["running", "upcoming"]]
+        tournament_ids = [t["id"] for t in tournaments if isinstance(t, dict) and t.get("status") in ["running", "upcoming"]]
 
         if not tournament_ids:
             logger.warning("⚠️ Нет активных турниров для загрузки матчей.")
@@ -66,11 +66,13 @@ async def update_match_cache():
             })
 
         cache_payload = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
             "matches": simplified
         }
 
         write_json_to_cache(CACHE_FILENAME, cache_payload)
         logger.info(f"✅ Кэш матчей обновлён: {len(simplified)} записей")
+        logger.info(f"🕒 Время обновления кэша: {cache_payload['updated_at']}")
 
     except Exception as e:
         logger.exception(f"🔥 Ошибка при обновлении матчей: {e}")

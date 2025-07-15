@@ -17,7 +17,6 @@ MatchStatus = Literal["live", "past", "upcoming"]
 
 logger = logging.getLogger("match_reader")
 
-
 def load_matches_from_cache(cache_path: str = MATCH_CACHE_FILE) -> List[dict]:
     if not os.path.exists(cache_path):
         logger.warning(f"⚠️ Файл кэша матчей {cache_path} не найден")
@@ -29,11 +28,11 @@ def load_matches_from_cache(cache_path: str = MATCH_CACHE_FILE) -> List[dict]:
 
     try:
         with open(cache_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            return data.get("matches", [])
     except Exception as e:
         logger.error(f"❌ Ошибка при загрузке JSON из {cache_path}: {e}")
         return []
-
 
 def load_tournaments_from_cache(cache_path: str = TOURNAMENT_CACHE_FILE) -> List[dict]:
     if not os.path.exists(cache_path):
@@ -46,11 +45,11 @@ def load_tournaments_from_cache(cache_path: str = TOURNAMENT_CACHE_FILE) -> List
 
     try:
         with open(cache_path, "r", encoding="utf-8") as f:
-            return json.load(f)
+            data = json.load(f)
+            return data.get("tournaments", [])
     except Exception as e:
         logger.error(f"❌ Ошибка при загрузке JSON из {cache_path}: {e}")
         return []
-
 
 def get_matches(status: MatchStatus, tier: Literal["sa", "all"], limit: int = 10) -> List[dict]:
     matches = load_matches_from_cache()
@@ -59,7 +58,7 @@ def get_matches(status: MatchStatus, tier: Literal["sa", "all"], limit: int = 10
 
     allowed_tiers = TIER_SA if tier == "sa" else TIER_ALL
     allowed_tournament_ids = {
-        t["id"] for t in tournaments if t.get("tier", "").lower() in allowed_tiers
+        t["id"] for t in tournaments if isinstance(t, dict) and t.get("tier", "").lower() in allowed_tiers
     }
 
     filtered = []
