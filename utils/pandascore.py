@@ -1,6 +1,7 @@
 import os
 import logging
 import httpx
+import json
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
@@ -97,6 +98,9 @@ async def fetch_all_matches(tournament_ids):
 # Используется в match_cacher.py и notifications.py
 
 def extract_stream_url(streams_list: list) -> str | None:
+    print("🔍 STREAMS RAW:")
+    print(json.dumps(streams_list, indent=2, ensure_ascii=False))
+
     if not isinstance(streams_list, list):
         return None
 
