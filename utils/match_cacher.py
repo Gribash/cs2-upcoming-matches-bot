@@ -38,14 +38,14 @@ async def update_match_cache():
 
         matches_raw = await fetch_all_matches(tournament_ids)
         logger.info(f"📥 Загружено матчей: {len(matches_raw)}")
-       
+        
         if matches_raw:
-            logger.info(f"🔬 Пример streams: {json.dumps(matches_raw[0].get('streams', []), indent=2)}")
+           logger.info(f"🔬 Пример streams_list: {json.dumps(matches_raw[0].get('streams_list'), indent=2)}")
 
         simplified = []
         for m in matches_raw:
             begin_at = m.get("begin_at")
-            stream_url = extract_stream_url(m.get("streams", []))
+            stream_url = extract_stream_url(m.get("streams_list") or [])
 
             opponents = [
                 {
