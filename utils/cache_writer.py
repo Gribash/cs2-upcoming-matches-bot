@@ -19,7 +19,12 @@ def write_json_to_cache(filename: str, data: List[Dict]) -> None:
     print(f"📦 Пишем кэш: {filename}")
     print(f"🔢 Количество объектов: {len(data) if data else 0}")
     if data:
-        print(f"🧪 Пример объекта: {json.dumps(data[0], indent=2, ensure_ascii=False, default=safe_serialize)}")
+        if isinstance(data, dict) and "matches" in data and isinstance(data["matches"], list) and data["matches"]:
+            print(f"🧪 Пример объекта: {json.dumps(data['matches'][0], indent=2, ensure_ascii=False, default=safe_serialize)}")
+        elif isinstance(data, dict) and "tournaments" in data and isinstance(data["tournaments"], list) and data["tournaments"]:
+            print(f"🧪 Пример объекта: {json.dumps(data['tournaments'][0], indent=2, ensure_ascii=False, default=safe_serialize)}")
+        else:
+            print("🧪 Нет объектов для примера")
 
     try:
         with open(path, "w", encoding="utf-8") as f:
