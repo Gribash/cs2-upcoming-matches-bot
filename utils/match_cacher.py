@@ -71,7 +71,6 @@ async def update_match_cache():
 
         write_json_to_cache(CACHE_FILENAME, cache_payload)
         logger.info(f"✅ Кэш матчей обновлён: {len(simplified)} записей")
-        logger.info(f"🕒 Время обновления кэша: {cache_payload['updated_at']}")
 
     except Exception as e:
         logger.exception(f"🔥 Ошибка при обновлении матчей: {e}")
