@@ -98,16 +98,15 @@ async def fetch_all_matches(tournament_ids):
 # Используется в match_cacher.py и notifications.py
 
 def extract_stream_url(streams_list: list) -> str | None:
-    print("🔍 STREAMS RAW:")
-    print(json.dumps(streams_list, indent=2, ensure_ascii=False))
-
     if not isinstance(streams_list, list):
         return None
 
+    # Сначала ищем официальную основную трансляцию
     for stream in streams_list:
-        if isinstance(stream, dict) and stream.get("main"):
-            return stream.get("raw_url")
+        if isinstance(stream, dict) and stream.get("main") and stream.get("raw_url"):
+            return stream["raw_url"]
 
+    # Затем — просто первую с raw_url
     for stream in streams_list:
         if isinstance(stream, dict) and stream.get("raw_url"):
             return stream["raw_url"]
