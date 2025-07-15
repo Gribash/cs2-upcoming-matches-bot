@@ -1,11 +1,10 @@
 import os
 import asyncio
 import logging
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup  # Для отправки сообщений с кнопками
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
-# Импорт функций работы с подписчиками и уведомлениями
 from db import (
     get_all_subscribers,
     get_notified_match_ids,
@@ -13,31 +12,22 @@ from db import (
     get_subscriber_tier
 )
 
-# Импорт функции получения предстоящих матчей
 from utils.match_cache_reader import get_matches
-
-# Загрузка переменных окружения из .env
-load_dotenv()
-
-# Создание папки для логов, если она отсутствует
-os.makedirs("logs", exist_ok=True)
-
-# Настройка логирования
+from utils.match_formatter import format_match_info
 from utils.logging_config import setup_logging
-setup_logging()
 
+load_dotenv()
+os.makedirs("logs", exist_ok=True)
+setup_logging()
 logger = logging.getLogger("notifications")
 
-# Основная функция, которая вызывается циклически: отправляет уведомления о матчах
 async def notify_upcoming_matches(bot):
     try:
         logger.info("🔍 Запуск проверки матчей...")
 
-        # Загружаем список всех подписчиков из базы
         subscribers = get_all_subscribers() or []
         logger.info(f"👥 Найдено подписчиков: {len(subscribers)}")
 
-        # Группировка подписчиков по их уровню подписки (tier)
         subs_by_tier = {"sa": [], "all": []}
         for user_id in subscribers:
             tier = get_subscriber_tier(user_id)
@@ -47,17 +37,14 @@ async def notify_upcoming_matches(bot):
 
         logger.info(f"S/A подписчиков: {len(subs_by_tier.get('sa', []))}, ALL подписчиков: {len(subs_by_tier.get('all', []))}")
 
-        # Загружаем список предстоящих матчей отдельно для каждой группы tier
         matches_by_tier = {
             "sa": get_matches(status="upcoming", limit=10, tier="sa"),
             "all": get_matches(status="upcoming", limit=10, tier="all")
         }
 
-        # Получаем текущее UTC-время
         now = datetime.now(timezone.utc)
         logger.info(f"🕒 Текущее UTC время: {now.isoformat()}")
 
-        # Обрабатываем матчи по каждому tier
         for tier, matches in matches_by_tier.items():
             logger.info(f"📦 Получено {len(matches)} матчей для tier={tier}")
             for match in matches:
@@ -67,35 +54,27 @@ async def notify_upcoming_matches(bot):
                 logger.info(f"[{tier.upper()}] Обработка матча {match_id} | Время начала: {begin_at}")
                 logger.debug(f"Матч: {match}")
 
-                # Если нет времени начала — пропускаем
                 if not begin_at:
                     logger.warning(f"⚠️ У матча {match_id} нет begin_at")
                     continue
 
-                # Преобразуем строку времени начала в объект datetime
                 try:
                     start_time = datetime.fromisoformat(begin_at.replace("Z", "+00:00"))
                 except Exception as e:
                     logger.error(f"❌ Ошибка разбора begin_at для матча {match_id}: {e}")
                     continue
 
-                # Считаем, сколько минут осталось до начала матча
                 minutes_to_start = (start_time - now).total_seconds() / 60
                 logger.info(f"⏳ До начала матча {match_id}: {minutes_to_start:.2f} мин")
 
-                # Отправляем уведомление, если матч скоро начнётся (в пределах [-6, +5] минут)
                 if -6 <= minutes_to_start <= 5:
-                    # Получаем информацию для форматирования сообщения
-                    league = match.get("league_name", "Без лиги")
-                    tournament = match.get("tournament_name", "Без турнира")
+                    match_info = format_match_info(match)
+                    league = match_info["league_name"]
+                    tournament = match_info["tournament_name"]
+                    teams = match_info["teams"]
+                    stream_url = match_info["stream_url"]
                     time_until = match.get("time_until", "время неизвестно")
-                    stream_url = match.get("stream_url")
 
-                    teams = " vs ".join(
-                        team.get("acronym") or team.get("name") for team in match.get("opponents", [])
-                    ) or "Команды неизвестны"
-
-                    # Формируем сообщение и кнопку
                     if stream_url and stream_url.startswith("http"):
                         text = (
                             f"<b>🔔 Скоро начнётся матч!</b>\n"
@@ -115,7 +94,6 @@ async def notify_upcoming_matches(bot):
                         )
                         keyboard = None
 
-                    # Перебираем всех подписчиков нужного tier
                     for user_id in subs_by_tier.get(tier, []):
                         notified_set = get_notified_match_ids(user_id)
                         already_notified = match_id in notified_set
@@ -124,7 +102,6 @@ async def notify_upcoming_matches(bot):
                             logger.info(f"🔁 Пользователь {user_id} уже уведомлён о матче {match_id}")
                             continue
 
-                        # Отправляем сообщение
                         try:
                             await bot.send_message(
                                 chat_id=user_id,
@@ -132,7 +109,6 @@ async def notify_upcoming_matches(bot):
                                 parse_mode="HTML",
                                 reply_markup=keyboard
                             )
-                            # Помечаем, что уведомление отправлено
                             mark_notified(user_id, match_id)
                             logger.info(f"✅ Уведомление отправлено пользователю {user_id} о матче {match_id}")
                         except Exception as e:
@@ -143,24 +119,16 @@ async def notify_upcoming_matches(bot):
     except Exception as e:
         logger.error(f"🔥 Ошибка в notify_upcoming_matches: {e}")
 
-# Если файл запущен напрямую — запускаем цикл уведомлений
 if __name__ == "__main__":
     from telegram import Bot
 
-    # Загружаем токен Telegram из .env
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
-
-    # Интервал между проверками матчей (в секундах)
     INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
-
-    # Инициализируем Telegram-бота
     bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
-    # Основной цикл — бесконечно вызываем notify_upcoming_matches с паузой
     async def main():
         while True:
             await notify_upcoming_matches(bot)
             await asyncio.sleep(INTERVAL)
 
-    # Запускаем цикл событий
     asyncio.run(main())

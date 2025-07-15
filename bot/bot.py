@@ -10,6 +10,7 @@ from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 # Импорт утилит
 from utils.match_cache_reader import get_matches
 from utils.tournament_cache_reader import get_tournament_name_by_id
+from utils.match_formatter import format_match_info
 from db import (
     init_db,
     add_subscriber,
@@ -60,15 +61,13 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        tournament_id = match.get("tournament_id")
-        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
-        stream_url = match.get("stream_url")
+        match_info = format_match_info(match)
+        league = match_info["league_name"]
+        tournament = match_info["tournament_name"]
+        teams = match_info["teams"]
+        stream_url = match_info["stream_url"]
 
-        teams = " vs ".join(
-            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
-        ) or "Команды неизвестны"
-
-        message_text = f"<b>🔴 LIVE</b>\n<b>Турнир:</b> {tournament_name}"
+        message_text = f"<b>🔴 LIVE</b>\n<b>Турнир:</b> {league} | {tournament}"
 
         if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup([
@@ -101,19 +100,17 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        tournament_id = match.get("tournament_id")
-        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
-        stream_url = match.get("stream_url")
+        match_info = format_match_info(match)
+        league = match_info["league_name"]
+        tournament = match_info["tournament_name"]
+        teams = match_info["teams"]
+        stream_url = match_info["stream_url"]
         time_until = match.get("time_until", "время неизвестно")
-
-        teams = " vs ".join(
-            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
-        ) or "Команды неизвестны"
 
         if stream_url and stream_url.startswith("http"):
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир:</b> {tournament_name}\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
                 f"<b>Начнётся через:</b> {time_until}"
             )
             keyboard = InlineKeyboardMarkup([
@@ -122,7 +119,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         else:
             message_text = (
                 f"<b>⏳ Ближайший матч</b>\n"
-                f"<b>Турнир:</b> {tournament_name}\n"
+                f"<b>Турнир:</b> {league} | {tournament}\n"
                 f"<b>Матч:</b> {teams}\n"
                 f"<b>Начнётся через:</b> {time_until}\n"
                 f"⚠️ <i>Трансляция отсутствует</i>"
@@ -152,17 +149,15 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches[:5]:
-        tournament_id = match.get("tournament_id")
-        tournament_name = get_tournament_name_by_id(tournament_id) or f"ID: {tournament_id}"
+        match_info = format_match_info(match)
+        league = match_info["league_name"]
+        tournament = match_info["tournament_name"]
+        teams = match_info["teams"]
         winner = match.get("winner_id", "Победитель неизвестен")
-
-        teams = " vs ".join(
-            team.get("acronym") or team.get("name") for team in match.get("opponents", [])
-        ) or "Команды неизвестны"
 
         msg = (
             f"<b>🏁 Завершённый матч</b>\n"
-            f"<b>Турнир:</b> {tournament_name}\n"
+            f"<b>Турнир:</b> {league} | {tournament}\n"
             f"<b>Матч:</b> {teams}\n"
             f"🏆 <b>Победитель ID:</b> {winner}"
         )
