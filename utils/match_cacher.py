@@ -41,7 +41,7 @@ async def update_match_cache():
         simplified = []
         for m in matches_raw:
             begin_at = m.get("begin_at")
-            stream_url = extract_stream_url(m.get("streams", []))
+            stream_url = extract_stream_url(m)
 
             opponents = [
                 {
