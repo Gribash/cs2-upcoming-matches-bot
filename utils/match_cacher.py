@@ -1,7 +1,7 @@
 import os
 import asyncio
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 
 from utils.pandascore import fetch_all_matches, extract_stream_url, format_time_until
@@ -41,7 +41,7 @@ async def update_match_cache():
         simplified = []
         for m in matches_raw:
             begin_at = m.get("begin_at")
-            stream_url = extract_stream_url(m)
+            stream_url = extract_stream_url(m.get("streams_list", []))
 
             opponents = [
                 {
@@ -65,8 +65,14 @@ async def update_match_cache():
                 "opponents": opponents
             })
 
-        write_json_to_cache(CACHE_FILENAME, simplified)
+        cache_payload = {
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "matches": simplified
+        }
+
+        write_json_to_cache(CACHE_FILENAME, cache_payload)
         logger.info(f"✅ Кэш матчей обновлён: {len(simplified)} записей")
+        logger.info(f"🕒 Время обновления кэша: {cache_payload['updated_at']}")
 
     except Exception as e:
         logger.exception(f"🔥 Ошибка при обновлении матчей: {e}")
