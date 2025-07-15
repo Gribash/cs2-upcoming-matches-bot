@@ -76,7 +76,8 @@ async def fetch_all_matches(tournament_ids):
                 "filter[tournament_id]": ",".join(map(str, tournament_ids)),
                 "page": page,
                 "per_page": per_page,
-                "sort": "begin_at"
+                "sort": "begin_at",
+                "include": "streams"
             }
 
             r = await client.get(url, headers=HEADERS, params=params)

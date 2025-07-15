@@ -1,6 +1,7 @@
 import os
 import asyncio
 import logging
+import json 
 from datetime import datetime, timezone
 from dotenv import load_dotenv
 
@@ -37,6 +38,9 @@ async def update_match_cache():
 
         matches_raw = await fetch_all_matches(tournament_ids)
         logger.info(f"📥 Загружено матчей: {len(matches_raw)}")
+       
+        if matches_raw:
+            logger.info(f"🔬 Пример streams: {json.dumps(matches_raw[0].get('streams', []), indent=2)}")
 
         simplified = []
         for m in matches_raw:
