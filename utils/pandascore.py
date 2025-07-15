@@ -95,16 +95,16 @@ async def fetch_all_matches(tournament_ids):
 # Извлекает ссылку на основную трансляцию из списка потоков.
 # Используется в match_cacher.py и notifications.py
 
-def extract_stream_url(streams_list: list) -> str:
-    if not streams_list:
+def extract_stream_url(streams_list: list) -> str | None:
+    if not isinstance(streams_list, list):
         return None
 
     for stream in streams_list:
-        if stream.get("main") is True:
+        if isinstance(stream, dict) and stream.get("main"):
             return stream.get("raw_url")
 
     for stream in streams_list:
-        if stream.get("raw_url"):
+        if isinstance(stream, dict) and stream.get("raw_url"):
             return stream["raw_url"]
 
     return None
