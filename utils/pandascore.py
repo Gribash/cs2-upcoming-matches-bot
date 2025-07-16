@@ -1,7 +1,6 @@
 import os
 import logging
 import httpx
-import json
 from datetime import datetime, timezone, timedelta
 from dotenv import load_dotenv
 
@@ -50,16 +49,24 @@ async def fetch_all_tournaments():
                     teams = t.get("teams", [])
                     matches_raw = t.get("matches", [])
 
-                    # Обработанные матчи
+                    # 🧠 Новый код — сопоставляем команды
+                    teams_by_id = {team["id"]: team for team in teams}
+
                     matches = []
                     for m in matches_raw:
-                        # Получаем трансляцию
                         stream_url = extract_stream_url(m.get("streams_list", []))
-
-                        # Извлекаем названия команд
                         opponents = m.get("opponents", [])
-                        team_1 = opponents[0]["opponent"] if len(opponents) > 0 else {}
-                        team_2 = opponents[1]["opponent"] if len(opponents) > 1 else {}
+
+                        team_1 = {}
+                        team_2 = {}
+
+                        if len(opponents) > 0:
+                            opp1_id = opponents[0]["opponent"].get("id")
+                            team_1 = teams_by_id.get(opp1_id, {})
+
+                        if len(opponents) > 1:
+                            opp2_id = opponents[1]["opponent"].get("id")
+                            team_2 = teams_by_id.get(opp2_id, {})
 
                         matches.append({
                             "id": m["id"],
