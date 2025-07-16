@@ -36,8 +36,8 @@ def match_teams_by_acronym(match_name: str, teams: list[dict]) -> tuple[dict, di
     if not match_name or "vs" not in match_name.lower():
         return {}, {}
 
-    # Убираем лишние слова перед матчем, например: "Round 1:", "Elimination Match:"
     try:
+        # Убираем всё перед "vs", если есть двоеточие
         clean_name = re.split(r":\s*", match_name)[-1]
         parts = [p.strip().lower() for p in clean_name.split("vs")]
         if len(parts) != 2:
@@ -47,8 +47,8 @@ def match_teams_by_acronym(match_name: str, teams: list[dict]) -> tuple[dict, di
     except Exception:
         return {}, {}
 
-    team_1 = next((t for t in teams if t.get("acronym", "").lower() == acronym_1), {})
-    team_2 = next((t for t in teams if t.get("acronym", "").lower() == acronym_2), {})
+    team_1 = next((t for t in teams if (t.get("acronym") or "").lower() == acronym_1), {})
+    team_2 = next((t for t in teams if (t.get("acronym") or "").lower() == acronym_2), {})
     return team_1, team_2
 
 async def fetch_all_tournaments():
