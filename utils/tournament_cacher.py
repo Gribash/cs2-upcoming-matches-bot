@@ -19,44 +19,26 @@ logger.setLevel(logging.INFO)
 
 # Параметры
 CACHE_FILENAME = "tournaments.json"
-INTERVAL_SECONDS = 3600  # 1 час
+INTERVAL_SECONDS = 1800  # Интервал обновления кэша (30 минут)
 
-async def update_tournament_cache():
+async def update_tournaments_cache():
     try:
-        logger.info("🔄 Загрузка турниров...")
+        logger.info("🔄 Обновление кэша турниров...")
 
-        tournaments_raw = await fetch_all_tournaments()
-        logger.info(f"📥 Загружено турниров: {len(tournaments_raw)}")
+        result = await fetch_all_tournaments()
+        if not result or not result.get("tournaments"):
+            logger.warning("⚠️ Получен пустой список турниров")
+            return
 
-        simplified = [
-            {
-                "id": t["id"],
-                "name": t["name"],
-                "slug": t.get("slug"),
-                "tier": t.get("tier"),
-                "status": t.get("status"),
-                "league_id": t.get("league_id"),
-                "league_name": t.get("league", {}).get("name")
-            }
-            for t in tournaments_raw
-        ]
-
-        cache_payload = {
-            "updated_at": datetime.now(timezone.utc).isoformat(),
-            "tournaments": simplified
-        }
-
-        write_json_to_cache(CACHE_FILENAME, cache_payload)
-        logger.info(f"✅ Кэш турниров обновлён: {len(simplified)} записей")
-        logger.info(f"🕒 Время обновления кэша: {cache_payload['updated_at']}")
+        write_json_to_cache(CACHE_FILENAME, result)
+        logger.info(f"✅ Кэш турниров обновлён ({len(result['tournaments'])} шт.)")
 
     except Exception as e:
-        logger.exception(f"🔥 Ошибка при обновлении турниров: {e}")
+        logger.exception(f"❌ Ошибка при обновлении турниров: {e}")
 
-# Цикл с немедленным первым запуском
 async def run_periodic_update():
     while True:
-        await update_tournament_cache()
+        await update_tournaments_cache()
         await asyncio.sleep(INTERVAL_SECONDS)
 
 if __name__ == "__main__":

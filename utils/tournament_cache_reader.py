@@ -43,3 +43,63 @@ def get_tournament_name_by_id(tournament_id: int) -> str | None:
         if t.get("id") == tournament_id:
             return t.get("name")
     return None
+
+def get_matches_from_cache(
+    tier: Literal["sa", "all"] = "all",
+    status: Literal["upcoming", "live", "finished"] = "upcoming",
+    limit: int = 10
+) -> List[dict]:
+    tournaments = get_tournaments(tier=tier, status_filter=None)
+    matches = []
+
+    for t in tournaments:
+        for match in t.get("matches", []):
+            if match.get("status") == status:
+                matches.append(match)
+
+    # Сортировка по begin_at
+    matches = [
+        m for m in matches
+        if m.get("begin_at")
+    ]
+    matches.sort(key=lambda m: m["begin_at"])
+
+    return matches[:limit]
+
+from datetime import datetime
+from typing import Literal
+
+def get_upcoming_matches(tier: Literal["sa", "all"] = "all", limit: int = 5) -> List[dict]:
+    tournaments = get_tournaments(tier=tier)
+    matches = []
+
+    for t in tournaments:
+        for m in t.get("matches", []):
+            if m.get("status") == "upcoming" and m.get("begin_at"):
+                matches.append((m, m["begin_at"]))
+
+    matches.sort(key=lambda x: x[1])
+    return [m[0] for m in matches[:limit]]
+
+def get_live_matches(tier: Literal["sa", "all"] = "all", limit: int = 5) -> List[dict]:
+    tournaments = get_tournaments(tier=tier)
+    matches = []
+
+    for t in tournaments:
+        for m in t.get("matches", []):
+            if m.get("status") == "running":
+                matches.append(m)
+
+    return matches[:limit]
+
+def get_recent_matches(tier: Literal["sa", "all"] = "all", limit: int = 5) -> List[dict]:
+    tournaments = get_tournaments(tier=tier)
+    matches = []
+
+    for t in tournaments:
+        for m in t.get("matches", []):
+            if m.get("status") == "finished" and m.get("begin_at"):
+                matches.append((m, m["begin_at"]))
+
+    matches.sort(key=lambda x: x[1], reverse=True)
+    return [m[0] for m in matches[:limit]]

@@ -15,16 +15,13 @@ HEADERS = {
 
 logger = logging.getLogger("tournaments")
 
-# Загружаем все турниры и фильтруем нужные поля.
-# Используется в tournament_cacher.py
-
-# Тиры, которые нам нужны
 TIERS = ["s", "a", "b", "c", "d"]
 TIERS_QUERY = ",".join(TIERS)
 
 async def fetch_all_tournaments():
     tournaments = []
     endpoints = ["running", "upcoming"]
+    includes = "matches,teams,league,serie"
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         for endpoint in endpoints:
@@ -34,6 +31,7 @@ async def fetch_all_tournaments():
                     f"{BASE_URL}/csgo/tournaments/{endpoint}"
                     f"?page={page}&per_page=100"
                     f"&filter[tier]={TIERS_QUERY}"
+                    f"&include={includes}"
                 )
                 logger.debug(f"📡 Запрос: {url}")
                 r = await client.get(url, headers=HEADERS)
@@ -47,55 +45,66 @@ async def fetch_all_tournaments():
                     break
 
                 for t in data:
+                    league = t.get("league") or {}
+                    serie = t.get("serie") or {}
+                    teams = t.get("teams", [])
+                    matches_raw = t.get("matches", [])
+
+                    # Обработанные матчи
+                    matches = []
+                    for m in matches_raw:
+                        # Получаем трансляцию
+                        stream_url = extract_stream_url(m.get("streams_list", []))
+
+                        # Извлекаем названия команд
+                        opponents = m.get("opponents", [])
+                        team_1 = opponents[0]["opponent"] if len(opponents) > 0 else {}
+                        team_2 = opponents[1]["opponent"] if len(opponents) > 1 else {}
+
+                        matches.append({
+                            "id": m["id"],
+                            "name": m.get("name"),
+                            "status": m.get("status"),
+                            "begin_at": m.get("begin_at"),
+                            "scheduled_at": m.get("scheduled_at"),
+                            "stream_url": stream_url,
+                            "team_1": {
+                                "id": team_1.get("id"),
+                                "name": team_1.get("name"),
+                                "acronym": team_1.get("acronym")
+                            },
+                            "team_2": {
+                                "id": team_2.get("id"),
+                                "name": team_2.get("name"),
+                                "acronym": team_2.get("acronym")
+                            }
+                        })
+
                     tournaments.append({
                         "id": t["id"],
                         "name": t.get("name"),
-                        "league_id": t.get("league_id"),
                         "tier": t.get("tier", "unknown"),
-                        "status": t.get("status", endpoint),  # либо running, либо upcoming
+                        "status": t.get("status", endpoint),
                         "begin_at": t.get("begin_at"),
-                        "end_at": t.get("end_at")
+                        "end_at": t.get("end_at"),
+                        "region": t.get("region"),
+                        "league": league.get("name"),
+                        "serie": serie.get("full_name"),
+                        "teams": [
+                            {
+                                "id": team.get("id"),
+                                "name": team.get("name"),
+                                "acronym": team.get("acronym")
+                            }
+                            for team in teams
+                        ],
+                        "matches": matches
                     })
 
                 page += 1
 
-    logger.info(f"✅ Загружено {len(tournaments)} турниров (running + upcoming) с фильтром по tier")
+    logger.info(f"✅ Загружено {len(tournaments)} турниров с матчами, командами, лигами и сериями")
     return tournaments
-
-# Загружает все матчи по списку ID турниров.
-# Используется в match_cacher.py
-
-async def fetch_all_matches(tournament_ids):
-    matches = []
-    page = 1
-    per_page = 100
-
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        while True:
-            url = f"{BASE_URL}/csgo/matches"
-            params = {
-                "filter[tournament_id]": ",".join(map(str, tournament_ids)),
-                "page": page,
-                "per_page": per_page,
-                "sort": "begin_at",
-                "include": "streams_list"
-            }
-
-            r = await client.get(url, headers=HEADERS, params=params)
-            if r.status_code != 200:
-                logger.warning(f"Ошибка загрузки матчей: {r.status_code}")
-                break
-            data = r.json()
-            if not data:
-                break
-
-            matches.extend(data)
-            page += 1
-
-    return matches
-
-# Извлекает ссылку на основную трансляцию из списка потоков.
-# Используется в match_cacher.py и notifications.py
 
 def extract_stream_url(streams_list: list) -> str | None:
     if not isinstance(streams_list, list):
