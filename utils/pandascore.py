@@ -1,8 +1,9 @@
 import os
 import logging
 import httpx
-from datetime import datetime, timezone, timedelta
+import re
 from dotenv import load_dotenv
+from datetime import datetime, timezone
 
 load_dotenv()
 
@@ -16,6 +17,39 @@ logger = logging.getLogger("tournaments")
 
 TIERS = ["s", "a", "b", "c", "d"]
 TIERS_QUERY = ",".join(TIERS)
+
+def extract_stream_url(streams_list: list) -> str | None:
+    if not isinstance(streams_list, list):
+        return None
+
+    for stream in streams_list:
+        if isinstance(stream, dict) and stream.get("main") and stream.get("raw_url"):
+            return stream["raw_url"]
+
+    for stream in streams_list:
+        if isinstance(stream, dict) and stream.get("raw_url"):
+            return stream["raw_url"]
+
+    return None
+
+def match_teams_by_acronym(match_name: str, teams: list[dict]) -> tuple[dict, dict]:
+    if not match_name or "vs" not in match_name.lower():
+        return {}, {}
+
+    # Убираем лишние слова перед матчем, например: "Round 1:", "Elimination Match:"
+    try:
+        clean_name = re.split(r":\s*", match_name)[-1]
+        parts = [p.strip().lower() for p in clean_name.split("vs")]
+        if len(parts) != 2:
+            return {}, {}
+
+        acronym_1, acronym_2 = parts
+    except Exception:
+        return {}, {}
+
+    team_1 = next((t for t in teams if t.get("acronym", "").lower() == acronym_1), {})
+    team_2 = next((t for t in teams if t.get("acronym", "").lower() == acronym_2), {})
+    return team_1, team_2
 
 async def fetch_all_tournaments():
     tournaments = []
@@ -49,37 +83,18 @@ async def fetch_all_tournaments():
                     teams = t.get("teams", [])
                     matches_raw = t.get("matches", [])
 
-                    # 🧠 Новый код — сопоставляем команды
-                    # 🧠 Новый код — сопоставляем команды по ID
-                    teams_by_id = {team["id"]: team for team in teams if team.get("id")}
-
                     matches = []
                     for m in matches_raw:
                         stream_url = extract_stream_url(m.get("streams_list", []))
-                        opponents = m.get("opponents", [])
+                        name = m.get("name", "")
+                        team_1, team_2 = match_teams_by_acronym(name, teams)
 
-                        team_1 = {}
-                        team_2 = {}
-
-                        # Оппонент 1
-                        if len(opponents) > 0 and isinstance(opponents[0], dict):
-                            opp1 = opponents[0].get("opponent")
-                            if isinstance(opp1, dict):
-                                team_1 = teams_by_id.get(opp1.get("id"), {})
-
-                        # Оппонент 2
-                        if len(opponents) > 1 and isinstance(opponents[1], dict):
-                            opp2 = opponents[1].get("opponent")
-                            if isinstance(opp2, dict):
-                                team_2 = teams_by_id.get(opp2.get("id"), {})
-
-                        # 🔍 Логируем несопоставленные команды
                         if not team_1 or not team_2:
-                            logger.warning(f"❗ Не удалось сопоставить команды для матча {m.get('name')} (ID: {m.get('id')})")
+                            logger.warning(f"❗ Не удалось сопоставить команды для матча {name} (ID: {m['id']})")
 
                         matches.append({
                             "id": m["id"],
-                            "name": m.get("name"),
+                            "name": name,
                             "status": m.get("status"),
                             "begin_at": m.get("begin_at"),
                             "scheduled_at": m.get("scheduled_at"),
@@ -96,51 +111,28 @@ async def fetch_all_tournaments():
                             }
                         })
 
+                    tournaments.append({
+                        "id": t["id"],
+                        "name": t.get("name"),
+                        "tier": t.get("tier", "unknown"),
+                        "status": t.get("status", endpoint),
+                        "begin_at": t.get("begin_at"),
+                        "end_at": t.get("end_at"),
+                        "region": t.get("region"),
+                        "league": league.get("name"),
+                        "serie": serie.get("full_name"),
+                        "teams": [
+                            {
+                                "id": team.get("id"),
+                                "name": team.get("name"),
+                                "acronym": team.get("acronym")
+                            }
+                            for team in teams
+                        ],
+                        "matches": matches
+                    })
+
                 page += 1
 
     logger.info(f"✅ Загружено {len(tournaments)} турниров с матчами, командами, лигами и сериями")
     return tournaments
-
-def extract_stream_url(streams_list: list) -> str | None:
-    if not isinstance(streams_list, list):
-        return None
-
-    # Сначала ищем официальную основную трансляцию
-    for stream in streams_list:
-        if isinstance(stream, dict) and stream.get("main") and stream.get("raw_url"):
-            return stream["raw_url"]
-
-    # Затем — просто первую с raw_url
-    for stream in streams_list:
-        if isinstance(stream, dict) and stream.get("raw_url"):
-            return stream["raw_url"]
-
-    return None
-
-# Форматирует время до начала матча.
-# Используется в match_cacher.py и notifications.py
-
-def format_time_until(start_time_iso: str) -> str:
-    try:
-        start_time = datetime.fromisoformat(start_time_iso.replace("Z", "+00:00"))
-        now = datetime.now(timezone.utc)
-        delta = start_time - now
-
-        if delta.total_seconds() < 0:
-            return "⏱ Уже начался"
-
-        days = delta.days
-        hours, remainder = divmod(delta.seconds, 3600)
-        minutes = remainder // 60
-
-        parts = []
-        if days > 0:
-            parts.append(f"{days} дн.")
-        if hours > 0:
-            parts.append(f"{hours} ч.")
-        if minutes > 0:
-            parts.append(f"{minutes} мин.")
-
-        return " ".join(parts) if parts else "Несколько минут"
-    except Exception:
-        return "Время неизвестно"
