@@ -31,7 +31,7 @@ async def fetch_all_tournaments():
             page = 1
             while True:
                 url = (
-                    f"{BASE_URL}/tournaments/{endpoint}"
+                    f"{BASE_URL}/csgo/tournaments/{endpoint}"
                     f"?page={page}&per_page=100"
                     f"&filter[tier]={TIERS_QUERY}"
                 )
@@ -72,7 +72,7 @@ async def fetch_all_matches(tournament_ids):
 
     async with httpx.AsyncClient(timeout=30.0) as client:
         while True:
-            url = f"{BASE_URL}/matches"
+            url = f"{BASE_URL}/csgo/matches"
             params = {
                 "filter[tournament_id]": ",".join(map(str, tournament_ids)),
                 "page": page,
