@@ -136,3 +136,50 @@ async def fetch_all_tournaments():
 
     logger.info(f"✅ Загружено {len(tournaments)} турниров с матчами, командами, лигами и сериями")
     return tournaments
+
+# Извлекает ссылку на основную трансляцию из списка потоков.
+# Используется в match_cacher.py и notifications.py
+
+def extract_stream_url(streams_list: list) -> str | None:
+    if not isinstance(streams_list, list):
+        return None
+
+    # Сначала ищем официальную основную трансляцию
+    for stream in streams_list:
+        if isinstance(stream, dict) and stream.get("main") and stream.get("raw_url"):
+            return stream["raw_url"]
+
+    # Затем — просто первую с raw_url
+    for stream in streams_list:
+        if isinstance(stream, dict) and stream.get("raw_url"):
+            return stream["raw_url"]
+
+    return None
+
+# Форматирует время до начала матча.
+# Используется в match_cacher.py и notifications.py
+
+def format_time_until(start_time_iso: str) -> str:
+    try:
+        start_time = datetime.fromisoformat(start_time_iso.replace("Z", "+00:00"))
+        now = datetime.now(timezone.utc)
+        delta = start_time - now
+
+        if delta.total_seconds() < 0:
+            return "⏱ Уже начался"
+
+        days = delta.days
+        hours, remainder = divmod(delta.seconds, 3600)
+        minutes = remainder // 60
+
+        parts = []
+        if days > 0:
+            parts.append(f"{days} дн.")
+        if hours > 0:
+            parts.append(f"{hours} ч.")
+        if minutes > 0:
+            parts.append(f"{minutes} мин.")
+
+        return " ".join(parts) if parts else "Несколько минут"
+    except Exception:
+        return "Время неизвестно"
