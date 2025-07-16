@@ -26,12 +26,16 @@ async def update_tournaments_cache():
         logger.info("🔄 Обновление кэша турниров...")
 
         result = await fetch_all_tournaments()
-        if not result or not result.get("tournaments"):
-            logger.warning("⚠️ Получен пустой список турниров")
+        if not result or not isinstance(result, list):
+            logger.warning("⚠️ Получен пустой или некорректный список турниров")
             return
 
-        write_json_to_cache(CACHE_FILENAME, result)
-        logger.info(f"✅ Кэш турниров обновлён ({len(result['tournaments'])} шт.)")
+        wrapped = {
+            "tournaments": result,
+            "updated_at": datetime.now(timezone.utc).isoformat()
+}
+        write_json_to_cache(CACHE_FILENAME, wrapped)
+        logger.info(f"✅ Кэш турниров обновлён ({len(result)} шт.)")
 
     except Exception as e:
         logger.exception(f"❌ Ошибка при обновлении турниров: {e}")
