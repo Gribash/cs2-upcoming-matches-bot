@@ -94,4 +94,4 @@ get-cache:
 	scp -r root@cs2-vps:/root/cs2-bot/cache ./cache
 
 refresh-cache:
-	ssh root@cs2-vps 'cd /root/cs2-bot && rm -f cache/tournaments.json && docker-compose exec bot python utils/refresh_cache.py'
+	ssh root@cs2-vps 'cd /root/cs2-bot && rm -f cache/tournaments.json && docker-compose exec -T bot python utils/refresh_cache.py'
