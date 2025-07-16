@@ -50,7 +50,8 @@ async def fetch_all_tournaments():
                     matches_raw = t.get("matches", [])
 
                     # 🧠 Новый код — сопоставляем команды
-                    teams_by_id = {team["id"]: team for team in teams}
+                    # 🧠 Новый код — сопоставляем команды по ID
+                    teams_by_id = {team["id"]: team for team in teams if team.get("id")}
 
                     matches = []
                     for m in matches_raw:
@@ -60,13 +61,21 @@ async def fetch_all_tournaments():
                         team_1 = {}
                         team_2 = {}
 
-                        if len(opponents) > 0:
-                            opp1_id = opponents[0]["opponent"].get("id")
-                            team_1 = teams_by_id.get(opp1_id, {})
+                        # Оппонент 1
+                        if len(opponents) > 0 and isinstance(opponents[0], dict):
+                            opp1 = opponents[0].get("opponent")
+                            if isinstance(opp1, dict):
+                                team_1 = teams_by_id.get(opp1.get("id"), {})
 
-                        if len(opponents) > 1:
-                            opp2_id = opponents[1]["opponent"].get("id")
-                            team_2 = teams_by_id.get(opp2_id, {})
+                        # Оппонент 2
+                        if len(opponents) > 1 and isinstance(opponents[1], dict):
+                            opp2 = opponents[1].get("opponent")
+                            if isinstance(opp2, dict):
+                                team_2 = teams_by_id.get(opp2.get("id"), {})
+
+                        # 🔍 Логируем несопоставленные команды
+                        if not team_1 or not team_2:
+                            logger.warning(f"❗ Не удалось сопоставить команды для матча {m.get('name')} (ID: {m.get('id')})")
 
                         matches.append({
                             "id": m["id"],
@@ -86,27 +95,6 @@ async def fetch_all_tournaments():
                                 "acronym": team_2.get("acronym")
                             }
                         })
-
-                    tournaments.append({
-                        "id": t["id"],
-                        "name": t.get("name"),
-                        "tier": t.get("tier", "unknown"),
-                        "status": t.get("status", endpoint),
-                        "begin_at": t.get("begin_at"),
-                        "end_at": t.get("end_at"),
-                        "region": t.get("region"),
-                        "league": league.get("name"),
-                        "serie": serie.get("full_name"),
-                        "teams": [
-                            {
-                                "id": team.get("id"),
-                                "name": team.get("name"),
-                                "acronym": team.get("acronym")
-                            }
-                            for team in teams
-                        ],
-                        "matches": matches
-                    })
 
                 page += 1
 
