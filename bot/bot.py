@@ -57,7 +57,7 @@ async def send_match(
     serie = match.get("serie", {}).get("full_name", "?")
     match_name = match.get("name", "?")
 
-    message = f"{league} | {tournament}\n {serie}\n<b>{match_name}</b>"
+    message = f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>"
 
     if match.get("status") == "finished":
         winner_id = match.get("winner_id")
