@@ -30,7 +30,7 @@ os.makedirs("logs", exist_ok=True)
 setup_logging()
 logger = logging.getLogger("bot")
 
-# Команды
+# --- Команды ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -42,36 +42,19 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Введи /next, чтобы узнать ближайшие матчи."
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str):
+async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str, keyboard=None):
     user_id = update.effective_chat.id
+
     league = match.get("league", {}).get("name", "?")
     tournament = match.get("tournament", {}).get("name", "?")
-    opponents = match.get("opponents", [])
-    
-    def get_team(opponent):
-        return opponent.get("acronym") or opponent.get("name") or "?"
-    
-    team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
-    team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
-    teams = f"{team_1} vs {team_2}"
+    serie = match.get("serie", {}).get("full_name", "?")
+    match_name = match.get("name", "?")
 
-    stream_url = match.get("stream_url")
-    time_until = format_time_until(match.get("begin_at"))
-    winner_id = match.get("winner_id")
-
-    message = f"<b>{prefix}</b>\n<b>Турнир:</b> {league} | {tournament}"
-
-    if match.get("status") == "finished":
-        message += f"\n<b>Матч:</b> {teams}\n🏆 <b>Победитель ID:</b> {winner_id or '?'}"
-        keyboard = None
-    elif not stream_url:
-        message += f"\n<b>Матч:</b> {teams}\n<b>Начнётся через:</b> {time_until}\n⚠️ <i>Трансляция отсутствует</i>"
-        keyboard = None
-    else:
-        message += f"\n<b>Начнётся через:</b> {time_until}"
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(text=f"📺 {teams}", url=stream_url)]
-        ])
+    message = (
+        f"<b>{prefix}</b>\n"
+        f"<b>Турнир:</b> {league} | {tournament} | {serie}\n"
+        f"<b>Матч:</b> {match_name}"
+    )
 
     await context.bot.send_message(
         chat_id=user_id,
@@ -102,7 +85,25 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        await send_match(update, context, match, "🔴 LIVE")
+        prefix = "🔴 LIVE"
+        stream_url = match.get("stream_url")
+        opponents = match.get("opponents", [])
+
+        def get_team(opponent):
+            return opponent.get("acronym") or opponent.get("name") or "?"
+
+        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
+        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
+        teams_text = f"{team_1} vs {team_2}"
+
+        if stream_url and stream_url.startswith("http"):
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(text=f"📺 {teams_text}", url=stream_url)]
+            ])
+        else:
+            keyboard = None
+
+        await send_match(update, context, match, prefix, keyboard)
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
