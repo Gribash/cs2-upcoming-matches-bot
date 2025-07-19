@@ -76,7 +76,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет ближайших матчей.")
         return
 
-    await update.message.reply_text("⏳ Ближайшие матчи:")
+    await update.message.reply_text("<b>⏳ Ближайшие матчи:</b>")
 
     for match in matches:
         await send_match(update, context, match, show_time_until=True)
@@ -90,8 +90,9 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей.")
         return
 
+    await update.message.reply_text("<b>🔴 LIVE матчи:</b>")
+
     for match in matches:
-        prefix = "🔴 LIVE"
         stream_url = match.get("stream_url")
         opponents = match.get("opponents", [])
 
@@ -104,12 +105,12 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(text=f"🟣 {teams_text}", url=stream_url)]
+                [InlineKeyboardButton(text=f"📺 {teams_text}", url=stream_url)]
             ])
         else:
             keyboard = None
 
-        await send_match(update, context, match, prefix, keyboard)
+        await send_match(update, context, match, keyboard=keyboard)
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -120,8 +121,10 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет завершённых матчей.")
         return
 
+    await update.message.reply_text("🏁 Завершённые матчи:")
+
     for match in matches:
-        await send_match(update, context, match, "🏁 Завершённый матч")
+        await send_match(update, context, match)
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
