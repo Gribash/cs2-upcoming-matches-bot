@@ -48,7 +48,7 @@ async def send_match(
     match: dict,
     keyboard=None,
     show_time_until=False,
-    show_result=False,
+    show_winner=False,
     footer_note: str = ""
 ):
     user_id = update.effective_chat.id
@@ -67,13 +67,19 @@ async def send_match(
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
 
-    if show_result:
-        results = match.get("results", [])
-        if len(results) == 2:
-            score_1 = results[0].get("score")
-            score_2 = results[1].get("score")
-            if score_1 is not None and score_2 is not None:
-                message += f"\n<b>Счёт:</b> {score_1} : {score_2}"
+    if show_winner:
+        winner_id = match.get("winner_id")
+        opponents = match.get("opponents", [])
+        winner_name = None
+        for opponent in opponents:
+            team = opponent.get("opponent", {})
+            if team.get("id") == winner_id:
+                winner_name = team.get("name")
+                break
+        if winner_name:
+            message += f"\n<b>Победитель:</b> {winner_name}"
+        else:
+            message += f"\n<b>Победитель:</b> неизвестен"
 
     if footer_note:
         message += f"\n{footer_note}"
@@ -144,7 +150,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
 
     for match in matches:
-        await send_match(update, context, match, show_result=True)
+        await send_match(update, context, match, show_winner=True)
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
