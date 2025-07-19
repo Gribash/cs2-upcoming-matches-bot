@@ -26,6 +26,7 @@ TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
+
 async def notify_upcoming_matches():
     try:
         logger.info("🔍 Запуск проверки матчей...")
@@ -46,8 +47,8 @@ async def notify_upcoming_matches():
 
         # Загружаем матчи из кэша
         matches_by_tier = {
-        "sa": get_matches(status="upcoming", tier="sa", limit=20),
-        "all": get_matches(status="upcoming", tier="all", limit=20),
+            "sa": get_matches(status="upcoming", tier="sa", limit=20),
+            "all": get_matches(status="upcoming", tier="all", limit=20),
         }
 
         for tier, matches in matches_by_tier.items():
@@ -68,36 +69,35 @@ async def notify_upcoming_matches():
                 minutes_to_start = (start_time - now).total_seconds() / 60
 
                 if -6 <= minutes_to_start <= 5:
-                    # Формируем сообщение
-                    time_until = format_time_until(begin_at)
-                    team1 = match.get("team_1", {}).get("acronym", "Team1")
-                    team2 = match.get("team_2", {}).get("acronym", "Team2")
-                    teams = f"{team1} vs {team2}"
+                    # --- Формируем сообщение ---
+                    league = match.get("league", {}).get("name", "?")
+                    tournament = match.get("tournament", {}).get("name", "?")
+                    serie = match.get("serie", {}).get("full_name", "?")
+                    match_name = match.get("name", "?")
 
-                    league = match.get("league", "Unknown League")
-                    serie = match.get("serie", "Unknown Serie")
+                    message = f"<b>🔔 Скоро начнётся матч!</b>\n"
+                    message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
+
+                    time_until = format_time_until(begin_at)
+                    if time_until:
+                        message += f"<b>Начнётся через:</b> {time_until}"
+
+                    # --- Формируем кнопку трансляции ---
                     stream_url = match.get("stream_url")
+                    opponents = match.get("opponents", [])
+                    team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
+                    team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
+                    teams_text = f"{team1} vs {team2}"
 
                     if stream_url and stream_url.startswith("http"):
-                        text = (
-                            f"<b>🔔 Скоро начнётся матч!</b>\n"
-                            f"<b>Турнир:</b> {league} | {serie}\n"
-                            f"<b>Начнётся через:</b> {time_until}"
-                        )
                         keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(text=f"🟪 {teams}", url=stream_url)]
+                            [InlineKeyboardButton(text=f"🟪 {teams_text}", url=stream_url)]
                         ])
                     else:
-                        text = (
-                            f"<b>🔔 Скоро начнётся матч!</b>\n"
-                            f"<b>Турнир:</b> {league} | {serie}\n"
-                            f"<b>Матч:</b> {teams}\n"
-                            f"<b>Начнётся через:</b> {time_until}\n"
-                            f"⚠️ <i>Трансляция отсутствует</i>"
-                        )
+                        message += "\n⚠️ <i>Трансляция отсутствует</i>"
                         keyboard = None
 
-                    # Рассылка уведомлений
+                    # --- Рассылка уведомлений ---
                     for user_id in subs_by_tier.get(tier, []):
                         already_notified = match_id in get_notified_match_ids(user_id)
                         if already_notified:
@@ -107,7 +107,7 @@ async def notify_upcoming_matches():
                         try:
                             await bot.send_message(
                                 chat_id=user_id,
-                                text=text,
+                                text=message,
                                 parse_mode="HTML",
                                 reply_markup=keyboard,
                             )
@@ -121,11 +121,13 @@ async def notify_upcoming_matches():
     except Exception as e:
         logger.exception(f"🔥 Ошибка в notify_upcoming_matches: {e}")
 
+
 # Циклический запуск
 async def main():
     while True:
         await notify_upcoming_matches()
         await asyncio.sleep(INTERVAL)
+
 
 if __name__ == "__main__":
     asyncio.run(main())
