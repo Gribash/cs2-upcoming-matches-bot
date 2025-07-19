@@ -47,6 +47,7 @@ async def send_match(
     context: ContextTypes.DEFAULT_TYPE,
     match: dict,
     keyboard=None,
+    show_team_names=False,
     show_time_until=False,
     footer_note: str = ""
 ):
@@ -67,6 +68,16 @@ async def send_match(
                 winner_name = team.get("name") or team.get("acronym") or "?"
                 break
         message += f"\n<b>🏆 Победитель:</b> {winner_name}"
+
+    if show_team_names:
+        opponents = match.get("opponents", [])
+        
+        def get_team(opponent):
+            return opponent.get("name") or "?"
+
+        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
+        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
+        message += f"\n\n<b>Матч:</b> {team_1} vs {team_2}"
 
     if show_time_until:
         begin_at = match.get("begin_at")
@@ -97,16 +108,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳<b>БЛИЖАЙШИЕ МАТЧИ</b>", parse_mode="HTML")
 
     for match in matches:
-        opponents = match.get("opponents", [])
-
-        def get_team(opponent):
-            return opponent.get("name") or "?"
-
-        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
-        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
-        teams_text = f"<b>Матч:</b> {team_1} vs {team_2}"
-
-        await send_match(update, context, match, show_time_until=True, footer_note=teams_text)
+        await send_match(update, context, match, show_time_until=True, show_team_names=True)
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
