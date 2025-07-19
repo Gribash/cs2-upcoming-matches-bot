@@ -57,7 +57,7 @@ async def send_match(
     serie = match.get("serie", {}).get("full_name", "?")
     match_name = match.get("name", "?")
 
-    message = f"{league} | {tournament} | {serie}\n<b>{match_name}</b>"
+    message = f"{league} | {tournament}\n {serie}\n<b>{match_name}</b>"
 
     if match.get("status") == "finished":
         winner_id = match.get("winner_id")
@@ -94,7 +94,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет ближайших матчей")
         return
 
-    await update.message.reply_text("⏳<b>Ближайшие матчи:</b>", parse_mode="HTML")
+    await update.message.reply_text("⏳<b>БЛИЖАЙШИЕ МАТЧИ</b>", parse_mode="HTML")
 
     for match in matches:
         await send_match(update, context, match, show_time_until=True)
@@ -108,7 +108,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей")
         return
 
-    await update.message.reply_text("🔴 <b>LIVE матчи:</b>", parse_mode="HTML")
+    await update.message.reply_text("🔴 <b>LIVE-МАТЧИ:</b>", parse_mode="HTML")
 
     for match in matches:
         stream_url = match.get("stream_url")
@@ -141,7 +141,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет результатов недавних матчей")
         return
 
-    await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
+    await update.message.reply_text("🏁 <b>ЗАВЕРШЕННЫЕ МАТЧИ</b>", parse_mode="HTML")
 
     for match in matches:
         await send_match(update, context, match)
