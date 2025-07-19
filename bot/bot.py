@@ -42,7 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Введи /next, чтобы узнать ближайшие матчи."
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str, keyboard=None):
+async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str, keyboard=None, show_time_until=False):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -56,13 +56,18 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
         f"<b>Матч:</b> {match_name}"
     )
 
+    if show_time_until:
+        begin_at = match.get("begin_at")
+        time_until = format_time_until(begin_at) if begin_at else "Неизвестно"
+        message += f"\n<b>Начнётся через:</b> {time_until}"
+
     await context.bot.send_message(
         chat_id=user_id,
         text=message,
         parse_mode="HTML",
         reply_markup=keyboard
     )
-
+    
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
@@ -73,7 +78,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     for match in matches:
-        await send_match(update, context, match, "⏳ Ближайший матч")
+        await send_match(update, context, match, "⏳ Ближайший матч", show_time_until=True)
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
