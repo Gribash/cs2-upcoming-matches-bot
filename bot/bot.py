@@ -42,7 +42,14 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all\n"
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False):
+async def send_match(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    match: dict,
+    keyboard=None,
+    show_time_until=False,
+    footer_note: str = ""
+):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -67,6 +74,9 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
             time_until = format_time_until(begin_at)
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
+
+    if footer_note:
+        message += f"\n{footer_note}"
 
     await context.bot.send_message(
         chat_id=user_id,
