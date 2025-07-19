@@ -42,7 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all\n"
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False):
+async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False, footer_note: str = ""):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -59,13 +59,16 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
 
+    if footer_note:
+        message += f"\n{footer_note}"
+
     await context.bot.send_message(
         chat_id=user_id,
         text=message,
         parse_mode="HTML",
         reply_markup=keyboard
     )
-
+    
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
@@ -106,10 +109,12 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             keyboard = InlineKeyboardMarkup([
                 [InlineKeyboardButton(text=f"🟣 {teams_text}", url=stream_url)]
             ])
+            footer_note = ""
         else:
             keyboard = None
+            footer_note = "⚠️ <i>Трансляция отсутствует</i>"
 
-        await send_match(update, context, match, keyboard=keyboard)
+        await send_match(update, context, match, keyboard=keyboard, footer_note=footer_note)
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -117,7 +122,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     matches = get_matches(status="past", tier=tier, limit=8)
 
     if not matches:
-        await update.message.reply_text("Нет завершённых матчей")
+        await update.message.reply_text("Нет результатов недавних матчей")
         return
 
     await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
