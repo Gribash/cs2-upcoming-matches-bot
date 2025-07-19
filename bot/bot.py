@@ -59,7 +59,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
             if str(team.get("id")) == str(winner_id):
                 winner_name = team.get("name") or team.get("acronym") or "?"
                 break
-        message += f"\n<b>Победитель:</b> {winner_name}"
+        message += f"\n<b>🏆 Победитель:</b> {winner_name}"
 
     if show_time_until:
         begin_at = match.get("begin_at")
@@ -74,7 +74,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
         parse_mode="HTML",
         reply_markup=keyboard
     )
-    
+
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
@@ -118,7 +118,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
             footer_note = ""
         else:
             keyboard = None
-            footer_note = "⚠️ <i>Трансляция отсутствует</i>"
+            footer_note = "<i>Трансляция отсутствует</i>"
 
         await send_match(update, context, match, keyboard=keyboard, footer_note=footer_note)
 
@@ -134,7 +134,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
 
     for match in matches:
-        await send_match(update, context, match, show_winner=True)
+        await send_match(update, context, match)
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
