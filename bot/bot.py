@@ -106,7 +106,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         if stream_url and stream_url.startswith("http"):
             keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(text=f"📺 {teams_text}", url=stream_url)]
+                [InlineKeyboardButton(text=f"🟣 {teams_text}", url=stream_url)]
             ])
         else:
             keyboard = None
@@ -129,7 +129,7 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="sa")
     update_is_active(user_id, True)
-    await update.message.reply_text("Вы подписаны на уведомления о ближайших матчах S и A-tier турниров.")
+    await update.message.reply_text("Вы подписаны на топ-турниры.")
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -140,17 +140,17 @@ async def subscribe_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="all")
     update_is_active(user_id, True)
-    await update.message.reply_text("Теперь вы подписаны на все матчи всех уровней (включая B, C и D).")
+    await update.message.reply_text("Теперь вы подписаны на все турниры.")
 
 async def set_bot_commands(app):
     commands = [
-        BotCommand("start", "Запустить бота и подписаться"),
+        BotCommand("start", "Запустить бота"),
         BotCommand("next", "Показать ближайшие матчи"),
         BotCommand("live", "Показать текущие матчи"),
-        BotCommand("recent", "Показать завершённые матчи"),
-        BotCommand("subscribe", "Подписаться на уведомления"),
+        BotCommand("recent", "Показать недавние матчи"),
+        BotCommand("subscribe_top_tiers", "Подписаться на топ-турниры"),
         BotCommand("unsubscribe", "Отписаться от уведомлений"),
-        BotCommand("subscribe_all", "Подписаться на все матчи всех уровней"),
+        BotCommand("subscribe_all_tiers", "Подписаться на все турниры"),
     ]
     await app.bot.set_my_commands(commands)
 
@@ -162,9 +162,9 @@ async def main():
     app.add_handler(CommandHandler("next", next_matches))
     app.add_handler(CommandHandler("live", live_matches))
     app.add_handler(CommandHandler("recent", recent_matches))
-    app.add_handler(CommandHandler("subscribe", subscribe))
+    app.add_handler(CommandHandler("subscribe_top_tiers", subscribe))
     app.add_handler(CommandHandler("unsubscribe", unsubscribe))
-    app.add_handler(CommandHandler("subscribe_all", subscribe_all))
+    app.add_handler(CommandHandler("subscribe_all_tiers", subscribe_all))
 
     await set_bot_commands(app)
     logger.info("Бот запущен")
