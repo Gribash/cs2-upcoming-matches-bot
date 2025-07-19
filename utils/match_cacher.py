@@ -1,13 +1,12 @@
 import asyncio
-import logging
 import sys
 
-from utils.logging_config import setup_logger
+from utils.logging_config import setup_logging
 from utils.cache_writer import write_json_to_cache, MATCHES_CACHE_NAME
 from utils.pandascore import fetch_all_matches
 
 # Настройка логгера
-logger = setup_logger("matches")
+logger = setup_logging("matches")
 
 # Интервал обновления в секундах
 CACHE_INTERVAL_SECONDS = 600  # 10 минут
