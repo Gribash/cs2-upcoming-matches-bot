@@ -38,8 +38,9 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_is_active(user_id, True)
     logger.info(f"/start от пользователя {user_id}")
     await update.message.reply_text(
-        "Привет! Ты подписан на уведомления о матчах топ-турниров (S и A tier).\n"
-        "Введи /next, чтобы узнать ближайшие матчи."
+        "Привет! Я буду отправлять тебе уведомления перед началом матчей CS2.\n"
+        "По-умолчанию, я отслеживаю только тир-1 турниры.\n"
+        "Но ты можешь подписаться на все матчи через /subscribe_all.\n"
     )
 
 async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str, keyboard=None, show_time_until=False):
@@ -52,14 +53,16 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
 
     message = (
         f"<b>{prefix}</b>\n"
-        f"<b>Турнир:</b> {league} | {tournament} | {serie}\n"
-        f"<b>Матч:</b> {match_name}"
+        f"{league} | {tournament} | {serie}\n"
+        f"<b>{match_name}</b>"
     )
 
     if show_time_until:
         begin_at = match.get("begin_at")
-        time_until = format_time_until(begin_at) if begin_at else "Неизвестно"
-        message += f"\n<b>Начнётся через:</b> {time_until}"
+        if begin_at:
+            time_until = format_time_until(begin_at)
+            if time_until != "Время неизвестно":
+                message += f"\n<b>Начнётся через:</b> {time_until}"
 
     await context.bot.send_message(
         chat_id=user_id,
@@ -67,7 +70,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
         parse_mode="HTML",
         reply_markup=keyboard
     )
-    
+
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
