@@ -15,7 +15,6 @@ from db import (
     add_subscriber,
     update_is_active,
     get_subscriber_tier,
-    update_tier,
 )
 
 # Загрузка токена
@@ -118,7 +117,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     matches = get_matches(status="past", tier=tier, limit=8)
 
     if not matches:
-        await update.message.reply_text("Нет завершённых матчей.")
+        await update.message.reply_text("Нет завершённых матчей")
         return
 
     await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
