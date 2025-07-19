@@ -42,7 +42,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all\n"
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False, footer_note: str = ""):
+async def send_match(
+    update: Update,
+    context: ContextTypes.DEFAULT_TYPE,
+    match: dict,
+    keyboard=None,
+    show_time_until=False,
+    show_result=False,
+    footer_note: str = ""
+):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -50,7 +58,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
     serie = match.get("serie", {}).get("full_name", "?")
     match_name = match.get("name", "?")
 
-    message = f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>"
+    message = f"{league} | {tournament} | {serie}\n<b>{match_name}</b>"
 
     if show_time_until:
         begin_at = match.get("begin_at")
@@ -58,6 +66,14 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
             time_until = format_time_until(begin_at)
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
+
+    if show_result:
+        results = match.get("results", [])
+        if len(results) == 2:
+            score_1 = results[0].get("score")
+            score_2 = results[1].get("score")
+            if score_1 is not None and score_2 is not None:
+                message += f"\n<b>Счёт:</b> {score_1} : {score_2}"
 
     if footer_note:
         message += f"\n{footer_note}"
@@ -128,7 +144,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
 
     for match in matches:
-        await send_match(update, context, match)
+        await send_match(update, context, match, show_result=True)
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
