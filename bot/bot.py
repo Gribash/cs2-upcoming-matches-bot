@@ -40,7 +40,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Привет! Я буду отправлять тебе уведомления перед началом матчей.\n"
         "По-умолчанию, я отслеживаю только тир-1 турниры.\n"
-        "Но ты можешь подписаться на все матчи через /subscribe_all.\n"
+        "Но ты можешь подписаться на все матчи через /subscribe_all\n"
     )
 
 async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False):
@@ -76,7 +76,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет ближайших матчей")
         return
 
-    await update.message.reply_text("⏳<b>Ближайшие матчи:</b>")
+    await update.message.reply_text("⏳<b>Ближайшие матчи:</b>", parse_mode="HTML")
 
     for match in matches:
         await send_match(update, context, match, show_time_until=True)
@@ -90,7 +90,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Сейчас нет активных матчей")
         return
 
-    await update.message.reply_text("🔴 <b>LIVE матчи:</b>")
+    await update.message.reply_text("🔴 <b>LIVE матчи:</b>", parse_mode="HTML")
 
     for match in matches:
         stream_url = match.get("stream_url")
@@ -121,7 +121,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет завершённых матчей.")
         return
 
-    await update.message.reply_text("🏁 Завершённые матчи:")
+    await update.message.reply_text("🏁 <b>Завершённые матчи:</b>", parse_mode="HTML")
 
     for match in matches:
         await send_match(update, context, match)
