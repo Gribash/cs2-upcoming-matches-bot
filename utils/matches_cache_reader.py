@@ -5,7 +5,9 @@ from datetime import datetime, timezone
 from typing import List
 
 from utils.cache_writer import read_json_from_cache, MATCHES_CACHE_NAME
+from utils.logging_config import setup_logging
 
+setup_logging()
 logger = logging.getLogger("matches")
 
 TIER_SA = {"s", "a"}

@@ -11,7 +11,6 @@ os.makedirs(CACHE_DIR, exist_ok=True)
 def get_cache_path(name: str) -> str:
     return os.path.join(CACHE_DIR, f"{name}.json")
 
-
 def write_json_to_cache(name: str, data: dict):
     path = get_cache_path(name)
     tmp_path = path + ".tmp"

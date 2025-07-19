@@ -21,6 +21,7 @@ def setup_logging():
         "notifications": "logs/notifications.log",
         "matches": "logs/matches.log",
         "telegram_http": "logs/telegram_http.log",
+        "db": "logs/db.log",
     }
 
     for name, filepath in loggers_config.items():

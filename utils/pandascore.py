@@ -3,6 +3,7 @@ import logging
 import httpx
 from dotenv import load_dotenv
 from datetime import datetime, timezone
+from utils.logging_config import setup_logging
 
 load_dotenv()
 
@@ -12,6 +13,7 @@ HEADERS = {
     "Authorization": f"Bearer {PANDASCORE_TOKEN}"
 }
 
+setup_logging
 logger = logging.getLogger("matches")
 
 async def fetch_all_matches() -> dict:

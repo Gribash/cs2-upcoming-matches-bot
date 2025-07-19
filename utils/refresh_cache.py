@@ -1,8 +1,7 @@
 import asyncio
+import logging
 from utils.pandascore import fetch_all_matches  
 from utils.cache_writer import write_json_to_cache
-
-import logging
 from utils.logging_config import setup_logging
 
 setup_logging()

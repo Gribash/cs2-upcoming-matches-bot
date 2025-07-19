@@ -1,12 +1,14 @@
 import sqlite3
 import os
 import logging
+from utils.logging_config import setup_logging
 
 # Путь к базе данных
 DB_PATH = "data/subscribers.db"
 
 # Настройка логгера
-logger = logging.getLogger(__name__)
+setup_logging()
+logger = logging.getLogger("db")
 
 def init_db():
     os.makedirs("data", exist_ok=True)
