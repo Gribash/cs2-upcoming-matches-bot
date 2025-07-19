@@ -50,7 +50,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
     serie = match.get("serie", {}).get("full_name", "?")
     match_name = match.get("name", "?")
 
-    message = f"{league} | {tournament} | {serie}\n<b>{match_name}</b>"
+    message = f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>"
 
     if show_time_until:
         begin_at = match.get("begin_at")
@@ -68,7 +68,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
         parse_mode="HTML",
         reply_markup=keyboard
     )
-    
+
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
