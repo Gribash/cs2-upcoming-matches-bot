@@ -65,7 +65,7 @@ def process_match(match: dict) -> dict:
 
 async def fetch_all_matches() -> dict:
     all_matches = []
-    endpoints = ["running", "upcoming"]
+    endpoints = ["running", "upcoming", "past"]
 
     async with httpx.AsyncClient(timeout=10) as client:
         for endpoint in endpoints:
