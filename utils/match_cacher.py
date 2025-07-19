@@ -1,6 +1,6 @@
 import asyncio
-import sys
 import logging
+import sys
 
 from utils.logging_config import setup_logging
 from utils.cache_writer import write_json_to_cache, MATCHES_CACHE_NAME
@@ -8,7 +8,7 @@ from utils.pandascore import fetch_all_matches
 
 # Настройка логгера
 setup_logging()
-logger = logging.getLogger("matches")
+logger = logging.getLogger("match_cacher")
 
 # Интервал обновления в секундах
 CACHE_INTERVAL_SECONDS = 600  # 10 минут
@@ -16,17 +16,18 @@ CACHE_INTERVAL_SECONDS = 600  # 10 минут
 async def cache_matches_loop(once=False):
     while True:
         try:
-            logger.info("Загрузка матчей из PandaScore...")
+            logger.info("🔄 Загрузка матчей из PandaScore (running + upcoming)...")
             match_data = await fetch_all_matches()
             write_json_to_cache(MATCHES_CACHE_NAME, match_data)
-            logger.info(f"Сохранено {len(match_data['matches'])} матчей в кэш.")
+            logger.info(f"✅ Сохранено {len(match_data['matches'])} матчей в кэш.")
         except Exception as e:
-            logger.error(f"Ошибка при обновлении кэша матчей: {e}", exc_info=True)
+            logger.error(f"❌ Ошибка при обновлении кэша матчей: {e}", exc_info=True)
 
         if once:
             break
 
         await asyncio.sleep(CACHE_INTERVAL_SECONDS)
+
 
 if __name__ == "__main__":
     once_flag = "--once" in sys.argv

@@ -90,7 +90,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         opponents = match.get("opponents", [])
 
         def get_team(opponent):
-            return opponent.get("acronym") or opponent.get("name") or "?"
+            return opponent.get("name") or "?"
 
         team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
         team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"

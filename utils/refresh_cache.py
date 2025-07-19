@@ -5,7 +5,7 @@ from utils.cache_writer import write_json_to_cache
 from utils.logging_config import setup_logging
 
 setup_logging()
-logger = logging.getLogger("refresh")
+logger = logging.getLogger("refresh_cache")
 
 async def main():
     logger.info("⏳ Обновление кэша матчей вручную...")

@@ -8,7 +8,7 @@ from utils.cache_writer import read_json_from_cache, MATCHES_CACHE_NAME
 from utils.logging_config import setup_logging
 
 setup_logging()
-logger = logging.getLogger("matches")
+logger = logging.getLogger("match_cache_reader")
 
 TIER_SA = {"s", "a"}
 

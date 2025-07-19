@@ -13,70 +13,78 @@ HEADERS = {
     "Authorization": f"Bearer {PANDASCORE_TOKEN}"
 }
 
-setup_logging
-logger = logging.getLogger("matches")
+setup_logging()
+logger = logging.getLogger("pandascore")
 
-async def fetch_all_matches() -> dict:
-    async with httpx.AsyncClient(timeout=10) as client:
-        response = await client.get(f"{BASE_URL}/csgo/matches/running", headers=HEADERS)
-        response.raise_for_status()
-        raw_matches = response.json()
-
-    matches = []
-
-    for match in raw_matches:
-        # Упрощаем opponents
-        opponents = []
-        for opponent in match.get("opponents", []):
-            team = opponent.get("opponent")
-            opponents.append({
-                "id": team.get("id"),
-                "name": team.get("name"),
-                "acronym": team.get("acronym"),
-                "image_url": team.get("image_url")
-            })
-
-        # Ищем главный стрим
-        streams = match.get("streams_list", [])
-        main_stream = next((s for s in streams if s.get("main")), None)
-        stream_url = main_stream.get("raw_url") if main_stream else None
-
-        # Формируем словарь
-        matches.append({
-            "id": match["id"],
-            "name": match["name"],
-            "status": match["status"],
-            "begin_at": match["begin_at"],
-            "scheduled_at": match.get("scheduled_at"),
-            "end_at": match.get("end_at"),
-            "modified_at": match.get("modified_at"),
-            "number_of_games": match.get("number_of_games"),
-            "results": match.get("results", []),
-            "winner_id": match.get("winner_id"),
-            "opponents": opponents,
-            "stream_url": stream_url,
-            "league": {
-                "id": match["league"]["id"],
-                "name": match["league"]["name"],
-                "image_url": match["league"].get("image_url")
-            },
-            "tournament": {
-                "id": match["tournament"]["id"],
-                "name": match["tournament"]["name"],
-                "tier": match["tournament"].get("tier"),
-                "region": match["tournament"].get("region")
-            },
-            "serie": {
-                "season": match["serie"].get("season"),
-                "full_name": match["serie"].get("full_name"),
-                "year": match["serie"].get("year")
-            }
+def process_match(match: dict) -> dict:
+    opponents = []
+    for opponent in match.get("opponents", []):
+        team = opponent.get("opponent", {})
+        opponents.append({
+            "id": team.get("id"),
+            "name": team.get("name"),
+            "acronym": team.get("acronym"),
+            "image_url": team.get("image_url")
         })
 
+    streams = match.get("streams_list", [])
+    main_stream = next((s for s in streams if s.get("main")), None)
+    stream_url = main_stream.get("raw_url") if main_stream else None
+
     return {
-        "matches": matches,
+        "id": match["id"],
+        "name": match["name"],
+        "status": match["status"],
+        "begin_at": match["begin_at"],
+        "scheduled_at": match.get("scheduled_at"),
+        "end_at": match.get("end_at"),
+        "modified_at": match.get("modified_at"),
+        "number_of_games": match.get("number_of_games"),
+        "results": match.get("results", []),
+        "winner_id": match.get("winner_id"),
+        "opponents": opponents,
+        "stream_url": stream_url,
+        "league": {
+            "id": match["league"]["id"],
+            "name": match["league"]["name"],
+            "image_url": match["league"].get("image_url")
+        },
+        "tournament": {
+            "id": match["tournament"]["id"],
+            "name": match["tournament"]["name"],
+            "tier": match["tournament"].get("tier"),
+            "region": match["tournament"].get("region")
+        },
+        "serie": {
+            "season": match["serie"].get("season"),
+            "full_name": match["serie"].get("full_name"),
+            "year": match["serie"].get("year")
+        }
+    }
+
+
+async def fetch_all_matches() -> dict:
+    all_matches = []
+    endpoints = ["running", "upcoming"]
+
+    async with httpx.AsyncClient(timeout=10) as client:
+        for endpoint in endpoints:
+            url = f"{BASE_URL}/csgo/matches/{endpoint}"
+            try:
+                response = await client.get(url, headers=HEADERS)
+                response.raise_for_status()
+                raw_matches = response.json()
+                processed = [process_match(m) for m in raw_matches]
+                all_matches.extend(processed)
+                logger.info(f"✅ Загружено {len(processed)} матчей из {endpoint}")
+            except Exception as e:
+                logger.warning(f"❌ Ошибка при загрузке матчей ({endpoint}): {e}")
+
+    return {
+        "matches": all_matches,
         "updated_at": datetime.now(timezone.utc).isoformat()
     }
+
 
 def format_time_until(start_time_iso: str) -> str:
     try:
