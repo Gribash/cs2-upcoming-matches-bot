@@ -46,8 +46,8 @@ async def notify_upcoming_matches():
 
         # Загружаем матчи из кэша
         matches_by_tier = {
-            "sa": get_matches(tier="sa", limit=20),
-            "all": get_matches(tier="all", limit=20),
+        "sa": get_matches(status="upcoming", tier="sa", limit=20),
+        "all": get_matches(status="upcoming", tier="all", limit=20),
         }
 
         for tier, matches in matches_by_tier.items():
