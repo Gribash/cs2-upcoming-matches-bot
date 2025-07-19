@@ -43,7 +43,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all.\n"
     )
 
-async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, prefix: str, keyboard=None, show_time_until=False):
+async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -51,11 +51,7 @@ async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: 
     serie = match.get("serie", {}).get("full_name", "?")
     match_name = match.get("name", "?")
 
-    message = (
-        f"<b>{prefix}</b>\n"
-        f"{league} | {tournament} | {serie}\n"
-        f"<b>{match_name}</b>"
-    )
+    message = f"{league} | {tournament} | {serie}\n<b>{match_name}</b>"
 
     if show_time_until:
         begin_at = match.get("begin_at")
@@ -80,8 +76,10 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text("Нет ближайших матчей.")
         return
 
+    await update.message.reply_text("⏳ Ближайшие матчи:")
+
     for match in matches:
-        await send_match(update, context, match, "⏳ Ближайший матч", show_time_until=True)
+        await send_match(update, context, match, show_time_until=True)
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
