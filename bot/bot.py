@@ -97,7 +97,16 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("⏳<b>БЛИЖАЙШИЕ МАТЧИ</b>", parse_mode="HTML")
 
     for match in matches:
-        await send_match(update, context, match, show_time_until=True)
+        opponents = match.get("opponents", [])
+
+        def get_team(opponent):
+            return opponent.get("name") or "?"
+
+        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
+        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
+        teams_text = f"<b>Матч:</b> {team_1} vs {team_2}"
+
+        await send_match(update, context, match, show_time_until=True, footer_note=teams_text)
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
