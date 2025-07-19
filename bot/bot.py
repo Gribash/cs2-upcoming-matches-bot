@@ -42,15 +42,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all\n"
     )
 
-async def send_match(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-    match: dict,
-    keyboard=None,
-    show_time_until=False,
-    show_winner=False,
-    footer_note: str = ""
-):
+async def send_match(update: Update, context: ContextTypes.DEFAULT_TYPE, match: dict, keyboard=None, show_time_until=False):
     user_id = update.effective_chat.id
 
     league = match.get("league", {}).get("name", "?")
@@ -60,6 +52,15 @@ async def send_match(
 
     message = f"{league} | {tournament} | {serie}\n<b>{match_name}</b>"
 
+    if match.get("status") == "finished":
+        winner_id = match.get("winner_id")
+        winner_name = "Неизвестен"
+        for team in match.get("opponents", []):
+            if str(team.get("id")) == str(winner_id):
+                winner_name = team.get("name") or team.get("acronym") or "?"
+                break
+        message += f"\n<b>Победитель:</b> {winner_name}"
+
     if show_time_until:
         begin_at = match.get("begin_at")
         if begin_at:
@@ -67,30 +68,13 @@ async def send_match(
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
 
-    if show_winner:
-        winner_id = match.get("winner_id")
-        opponents = match.get("opponents", [])
-        winner_name = None
-        for opponent in opponents:
-            team = opponent.get("opponent", {})
-            if team.get("id") == winner_id:
-                winner_name = team.get("name")
-                break
-        if winner_name:
-            message += f"\n<b>Победитель:</b> {winner_name}"
-        else:
-            message += f"\n<b>Победитель:</b> неизвестен"
-
-    if footer_note:
-        message += f"\n{footer_note}"
-
     await context.bot.send_message(
         chat_id=user_id,
         text=message,
         parse_mode="HTML",
         reply_markup=keyboard
     )
-
+    
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     tier = get_subscriber_tier(user_id) or "all"
