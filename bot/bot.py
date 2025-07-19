@@ -38,7 +38,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     update_is_active(user_id, True)
     logger.info(f"/start от пользователя {user_id}")
     await update.message.reply_text(
-        "Привет! Я буду отправлять тебе уведомления перед началом матчей CS2.\n"
+        "Привет! Я буду отправлять тебе уведомления перед началом матчей.\n"
         "По-умолчанию, я отслеживаю только тир-1 турниры.\n"
         "Но ты можешь подписаться на все матчи через /subscribe_all.\n"
     )
@@ -73,7 +73,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     matches = get_matches(status="upcoming", tier=tier, limit=8)
 
     if not matches:
-        await update.message.reply_text("Нет ближайших матчей.")
+        await update.message.reply_text("Нет ближайших матчей")
         return
 
     await update.message.reply_text("⏳<b>Ближайшие матчи:</b>")
@@ -87,7 +87,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     matches = get_matches(status="running", tier=tier, limit=8)
 
     if not matches:
-        await update.message.reply_text("Сейчас нет активных матчей.")
+        await update.message.reply_text("Сейчас нет активных матчей")
         return
 
     await update.message.reply_text("🔴 <b>LIVE матчи:</b>")
@@ -130,18 +130,18 @@ async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="sa")
     update_is_active(user_id, True)
-    await update.message.reply_text("Вы подписаны на топ-турниры.")
+    await update.message.reply_text("Вы подписаны на топ-турниры")
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     update_is_active(user_id, False)
-    await update.message.reply_text("Вы отписаны от уведомлений.")
+    await update.message.reply_text("Вы отписаны от уведомлений")
 
 async def subscribe_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="all")
     update_is_active(user_id, True)
-    await update.message.reply_text("Теперь вы подписаны на все турниры.")
+    await update.message.reply_text("Теперь вы подписаны на все турниры")
 
 async def set_bot_commands(app):
     commands = [
