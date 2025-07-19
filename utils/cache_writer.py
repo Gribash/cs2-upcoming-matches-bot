@@ -1,53 +1,41 @@
 import os
 import json
 from datetime import datetime, timezone
-from typing import Dict, Any
+from typing import Optional
 
 CACHE_DIR = "cache"
+MATCHES_CACHE_NAME = "matches"
+
 os.makedirs(CACHE_DIR, exist_ok=True)
 
-# --- Безопасный сериализатор для нестандартных типов (например, datetime)
-def safe_serialize(obj: Any):
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    raise TypeError(f"Type {type(obj)} not serializable")
+def get_cache_path(name: str) -> str:
+    return os.path.join(CACHE_DIR, f"{name}.json")
 
-# --- Сохраняет данные в JSON-файл в папку cache с отладкой
-def write_json_to_cache(filename: str, data: dict) -> None:
-    path = os.path.join(CACHE_DIR, filename)
 
-    print(f"📦 Пишем кэш: {filename}")
-    if data:
-        if isinstance(data, dict) and "matches" in data and isinstance(data["matches"], list) and data["matches"]:
-            print(f"🧪 Пример объекта: {json.dumps(data['matches'][0], indent=2, ensure_ascii=False, default=safe_serialize)}")
-        elif isinstance(data, dict) and "tournaments" in data and isinstance(data["tournaments"], list) and data["tournaments"]:
-            print(f"🧪 Пример объекта: {json.dumps(data['tournaments'][0], indent=2, ensure_ascii=False, default=safe_serialize)}")
-        else:
-            print("🧪 Нет объектов для примера")
+def write_json_to_cache(name: str, data: dict):
+    path = get_cache_path(name)
+    tmp_path = path + ".tmp"
+
+    with open(tmp_path, "w", encoding="utf-8") as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
+    os.replace(tmp_path, path)
+
+def read_json_from_cache(name: str) -> Optional[dict]:
+    path = get_cache_path(name)
+    if not os.path.exists(path):
+        return None
 
     try:
-        with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, ensure_ascii=False, indent=2, default=safe_serialize)
-            f.flush()
-            os.fsync(f.fileno())
-        print(f"✅ Кэш успешно сохранён в {path}")
-    except Exception as e:
-        print(f"❌ Ошибка сериализации или записи в кэш: {e}")
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    except (json.JSONDecodeError, OSError):
+        return None
 
-# Читает данные из JSON-файла в папке cache, если он существует. Возвращает словарь.
-
-def read_json_from_cache(filename: str) -> dict:
-    path = os.path.join(CACHE_DIR, filename)
+def get_cache_last_modified(name: str) -> Optional[datetime]:
+    path = get_cache_path(name)
     if not os.path.exists(path):
-        return {}
-    with open(path, "r", encoding="utf-8") as f:
-        return json.load(f)
+        return None
 
-# Возвращает дату последнего изменения кэша в формате ISO или пустую строку, если файл не существует.
-
-def get_cache_last_modified(filename: str) -> str:
-    path = os.path.join(CACHE_DIR, filename)
-    if not os.path.exists(path):
-        return ""
-    timestamp = os.path.getmtime(path)
-    return datetime.fromtimestamp(timestamp, tz=timezone.utc).isoformat()
+    ts = os.path.getmtime(path)
+    return datetime.fromtimestamp(ts, tz=timezone.utc)

@@ -11,7 +11,7 @@ from db import (
     mark_notified,
     get_subscriber_tier,
 )
-from utils.tournament_cache_reader import get_upcoming_matches
+from utils.matches_cache_reader import get_matches
 from utils.logging_config import setup_logging
 from utils.pandascore import format_time_until
 
@@ -46,8 +46,8 @@ async def notify_upcoming_matches():
 
         # Загружаем матчи из кэша
         matches_by_tier = {
-            "sa": get_upcoming_matches(tier="sa", limit=20),
-            "all": get_upcoming_matches(tier="all", limit=20),
+            "sa": get_matches(tier="sa", limit=20),
+            "all": get_matches(tier="all", limit=20),
         }
 
         for tier, matches in matches_by_tier.items():

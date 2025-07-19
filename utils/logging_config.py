@@ -20,7 +20,6 @@ def setup_logging():
         "bot": "logs/bot.log",
         "notifications": "logs/notifications.log",
         "matches": "logs/matches.log",
-        "tournaments": "logs/tournaments.log",
         "telegram_http": "logs/telegram_http.log",
     }
 

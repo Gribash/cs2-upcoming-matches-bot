@@ -1,5 +1,5 @@
 import asyncio
-from utils.pandascore import fetch_all_tournaments
+from utils.pandascore import fetch_all_matches  
 from utils.cache_writer import write_json_to_cache
 
 import logging
@@ -9,10 +9,10 @@ setup_logging()
 logger = logging.getLogger("refresh")
 
 async def main():
-    logger.info("⏳ Обновление кэша турниров вручную...")
-    tournaments = await fetch_all_tournaments()
-    write_json_to_cache("tournaments", {"tournaments": tournaments})
-    logger.info(f"✅ Успешно обновлён кэш: {len(tournaments)} турниров")
+    logger.info("⏳ Обновление кэша матчей вручную...")
+    matches = await fetch_all_matches()
+    write_json_to_cache("matches", {"matches": matches})
+    logger.info(f"✅ Успешно обновлён кэш: {len(matches)} матчей")
 
 if __name__ == "__main__":
     asyncio.run(main())
