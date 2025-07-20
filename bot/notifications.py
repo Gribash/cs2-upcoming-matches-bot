@@ -2,7 +2,7 @@ import os
 import asyncio
 import logging
 from datetime import datetime, timezone
-from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import Bot
 from dotenv import load_dotenv
 
 from bot.db import (
@@ -13,6 +13,9 @@ from bot.db import (
 )
 from utils.matches_cache_reader import get_matches
 from utils.logging_config import setup_logging
+
+# ✅ Новый импорт карточки матча
+from utils.form_match_card import build_match_card
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -45,7 +48,6 @@ async def notify_upcoming_matches():
         subscribers = get_all_subscribers() or []
         logger.debug(f"👥 Найдено подписчиков: {len(subscribers)}")
 
-        # 🔁 Кэшируем tier по user_id
         tier_by_user = {
             user_id: get_subscriber_tier(user_id) or "all"
             for user_id in subscribers
@@ -58,7 +60,6 @@ async def notify_upcoming_matches():
 
         logger.debug(f"S/A: {len(subs_by_tier['sa'])}, ALL: {len(subs_by_tier['all'])}")
 
-        # 🔁 Кешируем ID уже уведомлённых матчей
         notified_ids_by_user = {
             user_id: set(get_notified_match_ids(user_id))
             for user_id in subscribers
@@ -91,27 +92,35 @@ async def notify_upcoming_matches():
                 minutes_to_start = (start_time - now).total_seconds() / 60
 
                 if -5 <= minutes_to_start <= 5:
-                    league = match.get("league", {}).get("name", "?")
-                    tournament = match.get("tournament", {}).get("name", "?")
-                    serie = match.get("serie", {}).get("full_name", "?")
                     match_name = match.get("name", "?")
 
-                    message = f"<b>🔔 Матч начинается!</b>\n"
-                    message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
+                    # ❌ Старая ручная генерация сообщения
+                    # league = match.get("league", {}).get("name", "?")
+                    # tournament = match.get("tournament", {}).get("name", "?")
+                    # serie = match.get("serie", {}).get("full_name", "?")
+                    # message = f"<b>🔔 Матч начинается!</b>\n"
+                    # message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
+                    # stream_url = match.get("stream_url")
+                    # opponents = match.get("opponents", [])
+                    # team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
+                    # team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
+                    # teams_text = f"{team1} vs {team2}"
+                    # if stream_url and stream_url.startswith("http"):
+                    #     keyboard = InlineKeyboardMarkup([
+                    #         [InlineKeyboardButton(text=f"🟪 {teams_text}", url=stream_url)]
+                    #     ])
+                    # else:
+                    #     message += "\n <i>Трансляция отсутствует</i>"
+                    #     keyboard = None
 
-                    stream_url = match.get("stream_url")
-                    opponents = match.get("opponents", [])
-                    team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
-                    team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
-                    teams_text = f"{team1} vs {team2}"
-
-                    if stream_url and stream_url.startswith("http"):
-                        keyboard = InlineKeyboardMarkup([
-                            [InlineKeyboardButton(text=f"🟪 {teams_text}", url=stream_url)]
-                        ])
-                    else:
-                        message += "\n <i>Трансляция отсутствует</i>"
-                        keyboard = None
+                    # ✅ Новый код через build_match_card
+                    prefix = "<b>🔔 Матч начинается!</b>\n"
+                    message, keyboard = build_match_card(
+                        match,
+                        show_time_until=True,
+                        stream_button_text=None  # автоматически возьмётся {team1 vs team2}
+                    )
+                    message = prefix + message
 
                     tasks = []
 
@@ -132,6 +141,7 @@ async def notify_upcoming_matches():
 
     except Exception as e:
         logger.exception(f"🔥 Ошибка в notify_upcoming_matches: {e}")
+
 
 # --- Циклический запуск ---
 async def main():

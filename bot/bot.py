@@ -3,12 +3,11 @@ import asyncio
 import nest_asyncio
 import logging
 from dotenv import load_dotenv
-from telegram import Update, BotCommand, InlineKeyboardMarkup, InlineKeyboardButton
+from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram.request import HTTPXRequest
 
 from utils.matches_cache_reader import get_matches
-from utils.pandascore import format_time_until
 from utils.logging_config import setup_logging
 from bot.db import (
     init_db,
@@ -16,6 +15,9 @@ from bot.db import (
     update_is_active,
     get_subscriber_tier,
 )
+
+# ✅ Новый импорт для отправки карточек матчей
+from utils.telegram_messenger import send_match_batch
 
 # Загрузка токена
 load_dotenv()
@@ -39,126 +41,56 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         "Привет! Я буду отправлять тебе уведомления перед началом матчей.\n"
         "По-умолчанию, я отслеживаю только тир-1 турниры.\n"
-        "Но ты можешь подписаться на все матчи через /subscribe_all\n"
+        "Но ты можешь подписаться на все матчи через /subscribe_all"
     )
 
-async def send_match(
-    update: Update,
-    context: ContextTypes.DEFAULT_TYPE,
-    match: dict,
-    keyboard=None,
-    show_team_names=False,
-    show_time_until=False,
-    footer_note: str = ""
-):
-    user_id = update.effective_chat.id
+# --- ❌ СТАРЫЙ КОД ---
+# async def send_match(...):
+#     ...
+#     await context.bot.send_message(...)
 
-    league = match.get("league", {}).get("name", "?")
-    tournament = match.get("tournament", {}).get("name", "?")
-    serie = match.get("serie", {}).get("full_name", "?")
-    match_name = match.get("name", "?")
-
-    message = f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>"
-
-    if match.get("status") == "finished":
-        winner_id = match.get("winner_id")
-        winner_name = "Неизвестен"
-        for team in match.get("opponents", []):
-            if str(team.get("id")) == str(winner_id):
-                winner_name = team.get("name") or team.get("acronym") or "?"
-                break
-        message += f"\n<b>🏆 Победитель:</b> {winner_name}"
-
-    if show_team_names:
-        opponents = match.get("opponents") or []
-
-        def get_team(opponent):
-            return opponent.get("name") or "?"
-
-        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
-        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
-        message += f"\n\n<b>Матч:</b> {team_1} vs {team_2}"
-
-    if show_time_until:
-        begin_at = match.get("begin_at")
-        if begin_at:
-            time_until = format_time_until(begin_at)
-            if time_until != "Время неизвестно":
-                message += f"\n<b>Начнётся через:</b> {time_until}"
-
-    if footer_note:
-        message += f"\n{footer_note}"
-
-    await context.bot.send_message(
-        chat_id=user_id,
-        text=message,
-        parse_mode="HTML",
-        reply_markup=keyboard
-    )
+# --- ✅ Новый код ---
 
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="upcoming", tier=tier, limit=8)
-
-    if not matches:
-        await update.message.reply_text("Нет ближайших матчей")
-        return
-
-    await update.message.reply_text("⏳<b>БЛИЖАЙШИЕ МАТЧИ</b>", parse_mode="HTML")
-
-    for match in matches:
-        await send_match(update, context, match, show_time_until=True, show_team_names=True)
+    await send_match_batch(
+        update, context,
+        matches=matches,
+        prefix_text="⏳ <b>БЛИЖАЙШИЕ МАТЧИ</b>",
+        show_time_until=True,
+        stream_button=True,
+        empty_text="Нет ближайших матчей"
+    )
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/live от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="running", tier=tier, limit=8)
-
-    if not matches:
-        await update.message.reply_text("Сейчас нет активных матчей")
-        return
-
-    await update.message.reply_text("🔴 <b>LIVE-МАТЧИ:</b>", parse_mode="HTML")
-
-    for match in matches:
-        stream_url = match.get("stream_url")
-        opponents = match.get("opponents") or []
-
-        def get_team(opponent):
-            return opponent.get("name") or "?"
-
-        team_1 = get_team(opponents[0]) if len(opponents) > 0 else "?"
-        team_2 = get_team(opponents[1]) if len(opponents) > 1 else "?"
-        teams_text = f"{team_1} vs {team_2}"
-
-        if stream_url and stream_url.startswith("http"):
-            keyboard = InlineKeyboardMarkup([
-                [InlineKeyboardButton(text=f"🟣 {teams_text}", url=stream_url)]
-            ])
-            footer_note = ""
-        else:
-            keyboard = None
-            footer_note = "<i>Трансляция отсутствует</i>"
-
-        await send_match(update, context, match, keyboard=keyboard, footer_note=footer_note)
+    await send_match_batch(
+        update, context,
+        matches=matches,
+        prefix_text="🔴 <b>LIVE-МАТЧИ</b>",
+        stream_button=True,
+        empty_text="Сейчас нет активных матчей"
+    )
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/recent от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="past", tier=tier, limit=8)
-
-    if not matches:
-        await update.message.reply_text("Нет результатов недавних матчей")
-        return
-
-    await update.message.reply_text("🏁 <b>ЗАВЕРШЕННЫЕ МАТЧИ</b>", parse_mode="HTML")
-
-    for match in matches:
-        await send_match(update, context, match)
+    await send_match_batch(
+        update, context,
+        matches=matches,
+        prefix_text="🏁 <b>ЗАВЕРШЕННЫЕ МАТЧИ</b>",
+        show_winner=True,
+        stream_button=True,
+        empty_text="Нет результатов недавних матчей"
+    )
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
