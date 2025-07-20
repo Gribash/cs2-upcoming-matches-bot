@@ -8,7 +8,6 @@ def setup_logging():
         "bot": "logs/bot.log",
         "notifications": "logs/notifications.log",
         "matches": "logs/matches.log",
-        "telegram_http": "logs/telegram_http.log",
         "db": "logs/db.log",
         "error": "logs/errors.log"
     }
