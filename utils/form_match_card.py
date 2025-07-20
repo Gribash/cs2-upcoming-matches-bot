@@ -45,5 +45,6 @@ def build_match_card(
         ])
     else:
         keyboard = None
+        message += "\n<i>Трансляция отсутствует</i>"
 
     return message, keyboard
