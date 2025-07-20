@@ -8,12 +8,11 @@ from dotenv import load_dotenv
 from db import (
     get_all_subscribers,
     get_notified_match_ids,
-    mark_notified,
+    mark_notified_bulk,
     get_subscriber_tier,
 )
 from utils.matches_cache_reader import get_matches
 from utils.logging_config import setup_logging
-from utils.pandascore import format_time_until
 
 # Загрузка переменных окружения
 load_dotenv()
@@ -27,14 +26,15 @@ INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 
-# --- Рассылка и отметка уведомления ---
-async def send_and_mark(uid, match_id, match_name, message, keyboard):
+# --- Рассылка уведомления ---
+async def send(user_id, match_id, match_name, message, keyboard, successful_notifications):
     try:
-        await bot.send_message(chat_id=uid, text=message, parse_mode="HTML", reply_markup=keyboard)
-        mark_notified(uid, match_id)
-        logger.info(f"✅ Уведомление отправлено: {uid} -> {match_name} ({match_id})")
+        await bot.send_message(chat_id=user_id, text=message, parse_mode="HTML", reply_markup=keyboard)
+        logger.info(f"✅ Уведомление отправлено: {user_id} -> {match_name} ({match_id})")
+        successful_notifications.append((user_id, match_id))
+        logger.debug(f"📝 Добавлено к записи: {user_id} -> матч {match_id}")
     except Exception as e:
-        logger.warning(f"⚠️ Ошибка при отправке пользователю {uid}: {e}")
+        logger.warning(f"⚠️ Ошибка при отправке пользователю {user_id}: {e}")
 
 
 # --- Основная логика уведомлений ---
@@ -45,13 +45,24 @@ async def notify_upcoming_matches():
         subscribers = get_all_subscribers() or []
         logger.debug(f"👥 Найдено подписчиков: {len(subscribers)}")
 
+        # 🔁 Кэшируем tier по user_id
+        tier_by_user = {
+            user_id: get_subscriber_tier(user_id) or "all"
+            for user_id in subscribers
+        }
+
         subs_by_tier = {"sa": [], "all": []}
-        for user_id in subscribers:
-            tier = get_subscriber_tier(user_id)
+        for user_id, tier in tier_by_user.items():
             tier = tier if tier in ["sa", "all"] else "all"
             subs_by_tier[tier].append(user_id)
 
         logger.debug(f"S/A: {len(subs_by_tier['sa'])}, ALL: {len(subs_by_tier['all'])}")
+
+        # 🔁 Кешируем ID уже уведомлённых матчей
+        notified_ids_by_user = {
+            user_id: set(get_notified_match_ids(user_id))
+            for user_id in subscribers
+        }
 
         now = datetime.now(timezone.utc)
 
@@ -59,6 +70,8 @@ async def notify_upcoming_matches():
             "sa": get_matches(status="upcoming", tier="sa", limit=20),
             "all": get_matches(status="upcoming", tier="all", limit=20),
         }
+
+        successful_notifications = []
 
         for tier, matches in matches_by_tier.items():
             for match in matches:
@@ -101,20 +114,24 @@ async def notify_upcoming_matches():
                         keyboard = None
 
                     tasks = []
+
                     for user_id in subs_by_tier.get(tier, []):
-                        if match_id in get_notified_match_ids(user_id):
+                        if match_id in notified_ids_by_user.get(user_id, set()):
                             logger.debug(f"🔁 Уже уведомлён: {user_id} -> матч {match_id}")
                             continue
 
-                        tasks.append(send_and_mark(user_id, match_id, match_name, message, keyboard))
+                        tasks.append(send(user_id, match_id, match_name, message, keyboard, successful_notifications))
 
                     await asyncio.gather(*tasks)
+
+                    if successful_notifications:
+                        logger.info(f"💾 Отмечено {len(successful_notifications)} уведомлений в базе.")
+                        mark_notified_bulk(successful_notifications)
                 else:
                     logger.debug(f"⏭ Матч {match_id} не попадает в окно уведомления")
 
     except Exception as e:
         logger.exception(f"🔥 Ошибка в notify_upcoming_matches: {e}")
-
 
 # --- Циклический запуск ---
 async def main():

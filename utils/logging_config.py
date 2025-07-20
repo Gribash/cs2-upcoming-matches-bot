@@ -8,6 +8,7 @@ def setup_logging():
         "bot": "logs/bot.log",
         "notifications": "logs/notifications.log",
         "matches": "logs/matches.log",
+        "matches_cache_reader": "logs/matches_cache_reader.log",
         "db": "logs/db.log",
         "cache_writer": "logs/cache_writer.log",
         "error": "logs/errors.log"

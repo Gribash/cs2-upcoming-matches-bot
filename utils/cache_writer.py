@@ -37,22 +37,26 @@ def read_json_from_cache(name: str) -> dict:
     path = get_cache_path(name)
     if not os.path.exists(path):
         logger.warning(f"⚠️ Кэш-файл {name} не найден.")
-        return {}
+        return {"matches": [], "updated_at": None}
 
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-            if isinstance(data, dict):
-                logger.debug(f"📥 Кэш {name} успешно загружен.")
-                return data
-            else:
-                logger.warning(f"⚠️ Кэш-файл {name} содержит несловарь.")
-                return {}
+
+            if not isinstance(data, dict):
+                raise ValueError("Кэш не является словарём.")
+
+            matches = data.get("matches")
+            if not isinstance(matches, list):
+                raise ValueError("Поле 'matches' отсутствует или не является списком.")
+
+            logger.debug(f"📥 Кэш {name} успешно загружен.")
+            return data
+
     except Exception as e:
         logger.warning(f"❌ Ошибка чтения кэша {name}: {e}")
-        return {}
-
-
+        return {"matches": [], "updated_at": None}
+    
 def get_cache_last_modified(name: str) -> Optional[datetime]:
     path = get_cache_path(name)
     if not os.path.exists(path):

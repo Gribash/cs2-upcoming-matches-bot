@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import logging
+from datetime import datetime, timezone, timedelta
 from utils.logging_config import setup_logging
 
 # Путь к базе данных
@@ -104,13 +105,42 @@ def mark_notified(user_id: int, match_id: int):
         conn.commit()
         logger.info(f"Пометка: пользователь {user_id} уведомлён о матче {match_id}.")
 
-def get_notified_match_ids(user_id: int) -> set:
-    with sqlite3.connect(DB_PATH) as conn:
-        cursor = conn.execute("SELECT match_id FROM notified_matches WHERE user_id = ?", (user_id,))
-        ids = [row[0] for row in cursor.fetchall()]
-        logger.debug(f"Получено {len(ids)} уведомлений для пользователя {user_id}: {ids}")
-        return set(ids)
-    
+def get_notified_match_ids(user_id: int, days: int = 3) -> set:
+    cutoff = datetime.now(timezone.utc) - timedelta(days=days)
+    cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            cursor = conn.execute(
+                """
+                SELECT match_id
+                FROM notified_matches
+                WHERE user_id = ? AND notified_at >= ?
+                """,
+                (user_id, cutoff_str)
+            )
+            match_ids = {row[0] for row in cursor.fetchall()}
+            logger.debug(f"🔎 Уведомления за последние {days} дней для {user_id}: {len(match_ids)} матчей.")
+            return match_ids
+    except Exception as e:
+        logger.exception(f"❌ Ошибка при получении notified_match_ids для {user_id}: {e}")
+        return set()
+
+def mark_notified_bulk(user_match_pairs: list[tuple[int, int]]):
+    if not user_match_pairs:
+        return
+
+    try:
+        with sqlite3.connect(DB_PATH) as conn:
+            conn.executemany(
+                "INSERT OR IGNORE INTO notified_matches (user_id, match_id) VALUES (?, ?)",
+                user_match_pairs
+            )
+            conn.commit()
+            logger.info(f"📥 Добавлено уведомлений: {len(user_match_pairs)} записей.")
+    except Exception as e:
+        logger.exception(f"❌ Ошибка при массовой вставке уведомлений: {e}")
+
 def update_is_active(user_id: int, is_active: bool):
     with sqlite3.connect(DB_PATH) as conn:
         conn.execute("UPDATE subscribers SET is_active = ? WHERE user_id = ?", (1 if is_active else 0, user_id))
