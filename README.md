@@ -1,183 +1,104 @@
-# 🕹️ CS2 Upcoming Matches Bot
-
-Telegram-бот для отслеживания матчей по Counter-Strike 2 с поддержкой уведомлений о live и предстоящих матчах. Работает через PandaScore API.
-Размещен на сервере 05.07.2025.
----
-
-## 🚀 Возможности
-
-- Команда `/start` — подписывает пользователя на уведомления
-- Команда `/next` — показывает ближайшие матчи
-- Команда `/live` — показывает текущие live-матчи
-- Команда `/recent` — показывает завершённые матчи
-- Команда `/subscribe` и `/unsubscribe` — управление подпиской
-- Команда `/test_notify` — тестирование уведомлений на мок-данных
-- Поддержка Docker и Supervisor для продакшн-запуска
-
----
-
-## 🧱 Технологии
-
-- Python 3.11+
-- [python-telegram-bot](https://github.com/python-telegram-bot/python-telegram-bot) 20.x
-- `httpx` для API-запросов
-- SQLite для хранения подписчиков
-- Docker, Supervisor
-- PandaScore API
-
----
-
-## ⚙️ Установка и запуск
-
-### 1. Клонировать репозиторий
-
-git clone https://github.com/username/cs2-matches-bot.git
-cd cs2-matches-bot
-
-### 2. Создать `.env` файл
-
-TELEGRAM_BOT_TOKEN=ваш_токен_бота
-PANDASCORE_API_TOKEN=ваш_токен_pandascore
-USE_MOCK_DATA=false
-
-### 3. Запуск через Docker
-
-docker-compose up --build
-
-### 4. Альтернатива — локальный запуск
-
-`python bot/bot.py`
-
----
-
-## 🧪 Тестирование
-
-Для проверки отправки уведомлений на тестовых матчах:
-
-1. В `.env` установите:
-    
-    USE_MOCK_DATA=true
-    
-
-2. Запустите:
-    
-    python bot/notifications.py
-    
-
-Бот отправит уведомления с тестовыми матчами тем, кто подписан.
-
----
-
 ## 📁 Структура проекта
 
 ```
-cs2-matches-bot/
+CS_upcoming_matches_bot/
 │
-├── bot/
-│   ├── bot.py                  # Telegram-бот
-│   ├── notifications.py        # Фоновая задача с уведомлениями
+├── bot/                         # Основной код бота
+│   ├── __init__.py
+│   ├── bot.py                   # Telegram-бот: команды, логика взаимодействия
+│   ├── db.py                    # Работа с SQLite-базой (подписчики, уведомления)
+│   └── notifications.py         # Уведомления о ближайших матчах
 │
-├── utils/
-│   └── pandascore.py           # Работа с PandaScore API
+├── cache/
+│   └── matches.json             # Кэш с данными матчей и турниров
 │
 ├── data/
-│   └── subscribers.db          # SQLite база подписчиков
+│   └── subscribers.db           # SQLite-база подписчиков
 │
-├── logs/                       # Логи
+├── logs/                        # Логи всех процессов
+│   ├── bot.log
+│   ├── db.log
+│   ├── errors.log
+│   ├── matches.log
+│   ├── notifications.log
+│   ├── *.stdout.log / *.stderr.log
 │
-├── .env                        # Переменные окружения (не добавляй в git)
-├── .gitignore
+├── tests/
+│   └── test_notifications.py    # Pytest-тесты
+│
+├── utils/                       # Утилиты и вспомогательные скрипты
+│   ├── cache_writer.py
+│   ├── cleanup_db.py
+│   ├── cleanup_loop.sh
+│   ├── form_match_card.py       # Формирование текста и клавиатуры матча
+│   ├── logging_config.py
+│   ├── match_cacher.py          # Фоновая загрузка матчей в кэш
+│   ├── matches_cache_reader.py  # Чтение матчей из кэша
+│   ├── pandascore.py            # Работа с PandaScore API (в т.ч. форматирование времени)
+│   └── telegram_messenger.py    # Единая логика отправки карточек матчей
+│
+├── .env                         # Переменные окружения (tokenы, настройки)
+├── .gitignore                   # Исключения Git
 ├── docker-compose.yml
 ├── Dockerfile
-├── supervisor.conf
+├── Makefile
+├── deploy.sh                    # Скрипт деплоя на сервер
 ├── requirements.txt
-├── README.md
+├── supervisord.conf             # Настройка процессов (bot, notifications, match_cacher)
+└── README.md                    # Описание проекта (этот файл)
 ```
 
-utils/ README
+---
 
-This folder contains all utility modules used for the CS2 bot project. Each file is responsible for a specific part of the caching, API interaction, filtering, or logging infrastructure.
+## 📌 Описание проекта
 
-Files Overview
+**CS Upcoming Matches Bot** — Telegram-бот, присылающий уведомления о ближайших, текущих и завершённых матчах по Counter-Strike 2 (CS2), с данными от [PandaScore API](https://pandascore.co/).
 
-pandascore.py
+### 🧹 Возможности
 
-Purpose:
-	•	Handles direct async interaction with the PandaScore API.
-	•	Loads tournaments, matches, teams, etc.
+* `/start` — подписка и запуск бота
+* `/next` — ближайшие матчи
+* `/live` — текущие live-матчи (с кнопкой трансляции, если есть)
+* `/recent` — завершённые матчи (с победителем)
+* `/subscribe` — подписка на тир-1 турниры
+* `/subscribe_all` — подписка на все турниры
+* `/unsubscribe` — остановить уведомления
 
-tournament_cacher.py
+### ⚙️ Архитектура
 
-Purpose:
-	•	Fetches all active (upcoming/running) tournaments.
-	•	Filters only relevant tournaments.
-	•	Caches to data/tournaments_cache.json.
-	•	Run frequency: every hour.
+* Все матчи кэшируются каждые 10 минут (`match_cacher.py`)
+* Бот читает данные только из `matches.json`
+* Уведомления рассылаются за 5 минут до начала матча
+* Используется SQLite для хранения подписчиков и истории уведомлений
+* Supervisor запускает бота, уведомления и матч-кэшер
 
-match_cacher.py
+---
 
-Purpose:
-	•	Loads all matches for all cached tournaments.
-	•	Saves to data/matches_cache.json.
-	•	Run frequency: every 10 minutes.
+## 🚀 Установка и запуск
 
-refresh_cache.py
+### 1. Настройка переменных окружения
 
-Purpose:
-	•	Calls tournament_cacher and match_cacher sequentially.
-	•	Can be scheduled via cron or run via Supervisor.
+Создайте `.env` в корне:
 
-tournament_cache.py
+```env
+TELEGRAM_BOT_TOKEN=xxx
+PANDASCORE_TOKEN=xxx
+DEV_MODE=true
+USE_MOCK_DATA=false
+NOTIFY_INTERVAL_SECONDS=60
+```
 
-Purpose:
-	•	Reads cached tournaments from JSON.
-	•	Provides list or dictionary access.
-	•	Used by match_cacher and Telegram bot commands.
+### 2. Сборка и запуск через Docker
 
-match_cache.py
+```bash
+make deploy
+```
 
-Purpose:
-	•	Reads cached matches from JSON.
-	•	Returns full list of matches for further filtering.
+Выполнится:
 
-match_cache_filter.py
+* Git pull
+* Резервная копия
+* Пересборка контейнера
+* Перезапуск Supervisor с ботом, уведомлениями и матч-кэшером
 
-Purpose:
-	•	Filters cached matches by:
-	•	Status: upcoming, live, finished
-	•	Tier: sa, all
-	•	Used in Telegram bot commands (/next, /live, /recent).
-
-cache_writer.py
-
-Purpose:
-	•	Contains utility function write_cache(data, filename) to save any dict/list to JSON.
-	•	Prevents code duplication in cache-related modules.
-
-logging_config.py
-
-Purpose:
-	•	Sets up unified logging across the project.
-	•	Creates and configures:
-	•	logs/bot.log: bot command activity
-	•	logs/notifications.log: match notifications
-	•	logs/telegram_http.log: Telegram API requests
-	•	Used by bot.py, notifications.py, etc.
-
-Summary Table
-
-File	Role	Schedule / Usage
-pandascore.py	API interaction layer	Called by cacher modules
-tournament_cacher.py	Tournament data caching	Every 1 hour
-match_cacher.py	Match data caching	Every 10 minutes
-refresh_cache.py	Sequential cache update	Used by cron / Supervisor
-tournament_cache.py	Load cached tournaments	Used in match cacher/bot
-match_cache.py	Load cached matches	Used in bot/notifications
-match_cache_filter.py	Filter matches by tier and status	Used in bot commands
-cache_writer.py	Write cache to file	Used by cacher modules
-logging_config.py	Unified logging setup	Used across all modules
-
-
-⸻
-
-This structure helps to keep code modular, testable, and easy to maintain.
+---
