@@ -70,8 +70,8 @@ async def send_match(
         message += f"\n<b>🏆 Победитель:</b> {winner_name}"
 
     if show_team_names:
-        opponents = match.get("opponents", [])
-        
+        opponents = match.get("opponents") or []
+
         def get_team(opponent):
             return opponent.get("name") or "?"
 
@@ -123,7 +123,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     for match in matches:
         stream_url = match.get("stream_url")
-        opponents = match.get("opponents", [])
+        opponents = match.get("opponents") or []
 
         def get_team(opponent):
             return opponent.get("name") or "?"

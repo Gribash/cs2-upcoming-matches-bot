@@ -9,6 +9,7 @@ DB_PATH = "data/subscribers.db"
 # Настройка логгера
 setup_logging()
 logger = logging.getLogger("db")
+logger.setLevel(logging.INFO)
 
 def init_db():
     os.makedirs("data", exist_ok=True)
