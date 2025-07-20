@@ -27,11 +27,21 @@ INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
 bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 
+# --- Рассылка и отметка уведомления ---
+async def send_and_mark(uid, match_id, match_name, message, keyboard):
+    try:
+        await bot.send_message(chat_id=uid, text=message, parse_mode="HTML", reply_markup=keyboard)
+        mark_notified(uid, match_id)
+        logger.info(f"✅ Уведомление отправлено: {uid} -> {match_name} ({match_id})")
+    except Exception as e:
+        logger.warning(f"⚠️ Ошибка при отправке пользователю {uid}: {e}")
+
+
+# --- Основная логика уведомлений ---
 async def notify_upcoming_matches():
     try:
         logger.debug("🔍 Запуск проверки матчей...")
 
-        # Получаем подписчиков
         subscribers = get_all_subscribers() or []
         logger.debug(f"👥 Найдено подписчиков: {len(subscribers)}")
 
@@ -45,7 +55,6 @@ async def notify_upcoming_matches():
 
         now = datetime.now(timezone.utc)
 
-        # Загружаем матчи из кэша
         matches_by_tier = {
             "sa": get_matches(status="upcoming", tier="sa", limit=20),
             "all": get_matches(status="upcoming", tier="all", limit=20),
@@ -68,8 +77,7 @@ async def notify_upcoming_matches():
 
                 minutes_to_start = (start_time - now).total_seconds() / 60
 
-                if -6 <= minutes_to_start <= 5:
-                    # --- Формируем сообщение ---
+                if -5 <= minutes_to_start <= 5:
                     league = match.get("league", {}).get("name", "?")
                     tournament = match.get("tournament", {}).get("name", "?")
                     serie = match.get("serie", {}).get("full_name", "?")
@@ -78,7 +86,6 @@ async def notify_upcoming_matches():
                     message = f"<b>🔔 Матч начинается!</b>\n"
                     message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
 
-                    # --- Формируем кнопку трансляции ---
                     stream_url = match.get("stream_url")
                     opponents = match.get("opponents", [])
                     team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
@@ -93,24 +100,15 @@ async def notify_upcoming_matches():
                         message += "\n <i>Трансляция отсутствует</i>"
                         keyboard = None
 
-                    # --- Рассылка уведомлений ---
+                    tasks = []
                     for user_id in subs_by_tier.get(tier, []):
-                        already_notified = match_id in get_notified_match_ids(user_id)
-                        if already_notified:
-                            logger.debug(f"🔁 Пользователь {user_id} уже уведомлён о матче {match_id}")
+                        if match_id in get_notified_match_ids(user_id):
+                            logger.debug(f"🔁 Уже уведомлён: {user_id} -> матч {match_id}")
                             continue
 
-                        try:
-                            await bot.send_message(
-                                chat_id=user_id,
-                                text=message,
-                                parse_mode="HTML",
-                                reply_markup=keyboard,
-                            )
-                            mark_notified(user_id, match_id)
-                            logger.info(f"✅ Уведомление отправлено: {user_id} -> матч {match_id}")
-                        except Exception as e:
-                            logger.warning(f"⚠️ Ошибка при отправке пользователю {user_id}: {e}")
+                        tasks.append(send_and_mark(user_id, match_id, match_name, message, keyboard))
+
+                    await asyncio.gather(*tasks)
                 else:
                     logger.debug(f"⏭ Матч {match_id} не попадает в окно уведомления")
 
@@ -118,7 +116,7 @@ async def notify_upcoming_matches():
         logger.exception(f"🔥 Ошибка в notify_upcoming_matches: {e}")
 
 
-# Циклический запуск
+# --- Циклический запуск ---
 async def main():
     while True:
         await notify_upcoming_matches()

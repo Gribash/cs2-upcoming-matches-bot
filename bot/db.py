@@ -133,3 +133,13 @@ def update_tier(user_id: int, tier: str):
         )
         conn.commit()
         logger.info(f"У пользователя {user_id} обновлён уровень подписки на {tier}.")
+
+def create_indexes():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE INDEX IF NOT EXISTS idx_user_match
+        ON notified_matches(user_id, match_id);
+    """)
+    conn.commit()
+    conn.close()
