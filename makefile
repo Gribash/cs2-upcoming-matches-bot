@@ -102,8 +102,8 @@ refresh-cache:
 
 # ✅ Запуск всех тестов
 test:
-	pytest tests/ -v --color=yes --tb=short
+	PYTHONPATH=. pytest tests/ -v --color=yes --tb=short
 
 # ✅ Покрытие кода (coverage) по модулям bot и utils
 coverage:
-	pytest --cov=bot --cov=utils tests/ --cov-report=term-missing
+	PYTHONPATH=. pytest --cov=bot --cov=utils tests/ --cov-report=term-missing

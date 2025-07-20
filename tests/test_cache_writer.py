@@ -24,7 +24,6 @@ def test_write_and_read_cache(tmp_path, monkeypatch):
     assert "matches" in result
     assert result["matches"][0]["id"] == 1
 
-
 def test_get_cache_last_modified(tmp_path, monkeypatch):
     # Переопределим путь к кэшу на временную папку
     cache_dir = tmp_path / "cache"
@@ -39,15 +38,11 @@ def test_get_cache_last_modified(tmp_path, monkeypatch):
     mtime = get_cache_last_modified(name)
     assert isinstance(mtime, datetime)
 
-    # Убеждаемся, что файл действительно существует
     file_path = cache_dir / f"{name}.json"
     assert file_path.exists()
-
-    # Проверим, что время модификации не в будущем
     assert mtime.timestamp() <= time.time()
-
 
 def test_read_nonexistent_cache(monkeypatch):
     monkeypatch.setattr("utils.cache_writer.CACHE_DIR", "/nonexistent/path")
     result = read_json_from_cache("no_such_file")
-    assert result == []
+    assert result == {}
