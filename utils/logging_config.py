@@ -9,6 +9,7 @@ def setup_logging():
         "notifications": "logs/notifications.log",
         "matches": "logs/matches.log",
         "db": "logs/db.log",
+        "cache_writer": "logs/cache_writer.log",
         "error": "logs/errors.log"
     }
 
