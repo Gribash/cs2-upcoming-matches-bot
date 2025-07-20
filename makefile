@@ -86,12 +86,16 @@ get-logs:
 	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/logs ./logs
 
 get-data:
-	rm -f ./subscribers.db
-	scp $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/data/subscribers.db ./subscribers.db
+	rm -f ./data
+	scp $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/data/subscribers.db ./data
 
 get-cache:
 	rm -rf ./cache
 	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/cache ./cache
 
 refresh-cache:
-	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH) && rm -f cache/matches.json && docker-compose exec -T bot python utils/refresh_cache.py'
+	ssh $(SSH_USER)@$(SSH_HOST) '\
+		cd $(SSH_PATH) && \
+		rm -rf cache/* && \
+		docker-compose exec -T bot python utils/refresh_cache.py \
+	'
