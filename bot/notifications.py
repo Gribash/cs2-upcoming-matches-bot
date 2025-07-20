@@ -93,31 +93,9 @@ async def notify_upcoming_matches():
 
                 if -5 <= minutes_to_start <= 5:
                     match_name = match.get("name", "?")
-
-                    # ❌ Старая ручная генерация сообщения
-                    # league = match.get("league", {}).get("name", "?")
-                    # tournament = match.get("tournament", {}).get("name", "?")
-                    # serie = match.get("serie", {}).get("full_name", "?")
-                    # message = f"<b>🔔 Матч начинается!</b>\n"
-                    # message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
-                    # stream_url = match.get("stream_url")
-                    # opponents = match.get("opponents", [])
-                    # team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
-                    # team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
-                    # teams_text = f"{team1} vs {team2}"
-                    # if stream_url and stream_url.startswith("http"):
-                    #     keyboard = InlineKeyboardMarkup([
-                    #         [InlineKeyboardButton(text=f"🟪 {teams_text}", url=stream_url)]
-                    #     ])
-                    # else:
-                    #     message += "\n <i>Трансляция отсутствует</i>"
-                    #     keyboard = None
-
-                    # ✅ Новый код через build_match_card
                     prefix = "<b>🔔 Матч начинается!</b>\n"
                     message, keyboard = build_match_card(
                         match,
-                        show_time_until=True,
                         stream_button_text=None  # автоматически возьмётся {team1 vs team2}
                     )
                     message = prefix + message
