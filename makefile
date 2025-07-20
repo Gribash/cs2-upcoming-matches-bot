@@ -100,10 +100,10 @@ refresh-cache:
 		docker-compose exec -T bot python utils/refresh_cache.py \
 	'
 
-# ✅ Запуск всех тестов
+# Запуск всех тестов с логированием, доступным для caplog
 test:
-	PYTHONPATH=. pytest tests/ -v --color=yes --tb=short
+	PYTHONPATH=. LOG_PROPAGATE=1 pytest
 
-# ✅ Покрытие кода (coverage) по модулям bot и utils
+# Запуск тестов с покрытием
 coverage:
-	PYTHONPATH=. pytest --cov=bot --cov=utils tests/ --cov-report=term-missing
+	PYTHONPATH=. LOG_PROPAGATE=1 pytest --cov=bot --cov=utils tests/ --cov-report=term-missing
