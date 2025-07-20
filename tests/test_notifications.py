@@ -1,9 +1,11 @@
 import sys
 import os
 import pytest
-from unittest.mock import patch
+import asyncio
+from datetime import datetime, timedelta, timezone
+from unittest.mock import patch, AsyncMock
 
-# Добавляем корень проекта в sys.path для корректных импортов
+# Добавляем корень проекта в PYTHONPATH
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from bot.db import (
@@ -14,7 +16,6 @@ from bot.db import (
 )
 from utils.matches_cache_reader import get_matches
 from utils.cache_writer import write_json_to_cache
-
 
 # --- Тесты работы с БД ---
 def test_get_all_subscribers():
@@ -61,8 +62,6 @@ def test_matches_cache_empty(monkeypatch):
 
 
 def test_match_filtering_logic():
-    from datetime import datetime, timedelta, timezone
-
     now = datetime.now(timezone.utc)
 
     matches_data = {
@@ -86,3 +85,34 @@ def test_match_filtering_logic():
     running = get_matches(status="running", tier="all", limit=10)
     assert any(m["id"] == 3 for m in running)
     assert all(m["status"] == "running" for m in running)
+
+
+# --- Тест функции уведомлений ---
+@pytest.mark.asyncio
+async def test_notify_upcoming_matches(monkeypatch):
+    from bot import notifications
+
+    test_match = {
+        "id": 101,
+        "name": "Test Match",
+        "begin_at": (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat(),
+        "status": "upcoming",
+        "league": {"name": "Test League"},
+        "tournament": {"name": "Test Tournament", "tier": "s"},
+        "serie": {"full_name": "Test Serie"},
+        "opponents": [{"id": 1, "name": "Team A"}, {"id": 2, "name": "Team B"}],
+        "stream_url": "http://stream"
+    }
+
+    monkeypatch.setattr("bot.notifications.get_all_subscribers", lambda: [111])
+    monkeypatch.setattr("bot.notifications.get_subscriber_tier", lambda _: "sa")
+    monkeypatch.setattr("bot.notifications.get_notified_match_ids", lambda _: set())
+    monkeypatch.setattr("bot.notifications.mark_notified_bulk", lambda pairs: None)
+    monkeypatch.setattr("bot.notifications.get_matches", lambda **kwargs: [test_match])
+    monkeypatch.setattr("bot.notifications.build_match_card", lambda match, **kwargs: ("Card", None))
+
+    mock_send = AsyncMock()
+    monkeypatch.setattr(notifications.bot, "send_message", mock_send)
+
+    await notifications.notify_upcoming_matches()
+    mock_send.assert_called_once()

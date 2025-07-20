@@ -100,5 +100,10 @@ refresh-cache:
 		docker-compose exec -T bot python utils/refresh_cache.py \
 	'
 
+# ✅ Запуск всех тестов
 test:
-	pytest -v tests/test_notifications.py
+	pytest tests/ -v --color=yes --tb=short
+
+# ✅ Покрытие кода (coverage) по модулям bot и utils
+coverage:
+	pytest --cov=bot --cov=utils tests/ --cov-report=term-missing
