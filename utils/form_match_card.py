@@ -11,13 +11,12 @@ def build_match_card(
     league = match.get("league", {}).get("name", "?")
     tournament = match.get("tournament", {}).get("name", "?")
     serie = match.get("serie", {}).get("full_name", "?")
-    match_name = match.get("name", "?")
 
     opponents = match.get("opponents", [])
     team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
     team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
 
-    message = f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n<b>{team1} vs {team2}</b>"
+    message = f"{league} | {tournament}\n{serie}\n<b>{team1} vs {team2}</b>"
 
     # Победитель (если матч завершён и указан winner_id)
     if show_winner and match.get("status") == "finished":

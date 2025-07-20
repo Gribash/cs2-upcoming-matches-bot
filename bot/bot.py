@@ -44,13 +44,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Но ты можешь подписаться на все матчи через /subscribe_all"
     )
 
-# --- ❌ СТАРЫЙ КОД ---
-# async def send_match(...):
-#     ...
-#     await context.bot.send_message(...)
-
-# --- ✅ Новый код ---
-
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
     logger.info(f"/next от пользователя {user_id}")
@@ -61,7 +54,6 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         matches=matches,
         prefix_text="⏳ <b>БЛИЖАЙШИЕ МАТЧИ</b>",
         show_time_until=True,
-        stream_button=True,
         empty_text="Нет ближайших матчей"
     )
 
@@ -88,7 +80,6 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
         matches=matches,
         prefix_text="🏁 <b>ЗАВЕРШЕННЫЕ МАТЧИ</b>",
         show_winner=True,
-        stream_button=True,
         empty_text="Нет результатов недавних матчей"
     )
 
