@@ -79,19 +79,19 @@ whoami:
 .PHONY: run stop logs shell env-check create-feature push-dev merge-dev pull-main push-main deploy sync-prod status branches whoami
 
 clear-logs:
-	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH)/logs && for f in *.log *.err.log; do :> $$f; done'
+	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH)/logs && rm -f *.log *.err.log *.out.log'
 
 get-logs:
 	rm -rf ./logs
-	scp -r root@cs2-vps:/root/cs2-bot/logs ./logs
+	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/logs ./logs
 
 get-data:
 	rm -f ./subscribers.db
-	scp root@cs2-vps:/root/cs2-bot/data/subscribers.db ./subscribers.db
+	scp $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/data/subscribers.db ./subscribers.db
 
 get-cache:
 	rm -rf ./cache
-	scp -r root@cs2-vps:/root/cs2-bot/cache ./cache
+	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/cache ./cache
 
 refresh-cache:
-	ssh root@cs2-vps 'cd /root/cs2-bot && rm -f cache/matches.json && docker-compose exec -T bot python utils/refresh_cache.py'
+	ssh $(SSH_USER)@$(SSH_HOST) 'cd $(SSH_PATH) && rm -f cache/matches.json && docker-compose exec -T bot python utils/refresh_cache.py'
