@@ -59,9 +59,26 @@ def test_tier_all_accepts_any(sample_matches):
     results = get_matches(status="upcoming", tier="all", limit=10)
     assert any(match["id"] == 1 for match in results)
 
-def test_invalid_date_skipped(sample_matches, caplog):
-    write_json_to_cache("matches", sample_matches)
-    results = get_matches(status="upcoming", tier="sa", limit=10)
-    # ID 4 с невалидной датой не должен попасть в результат
-    assert all(match["id"] != 4 for match in results)
-    assert any("невозможно распарсить" in msg.lower() for msg in caplog.text.lower())
+def test_invalid_date_skipped(caplog):
+    from utils.matches_cache_reader import get_matches
+    import logging
+
+    invalid_match = {
+        "id": 9999,
+        "begin_at": "not-a-date",
+        "status": "not_started",
+        "tournament": {"tier": "s"},
+    }
+
+    matches_data = {
+        "matches": [invalid_match]
+    }
+
+    from utils.cache_writer import write_json_to_cache
+    write_json_to_cache("matches", matches_data)
+
+    caplog.set_level(logging.WARNING)
+    result = get_matches(status="upcoming", tier="sa", limit=5)
+
+    assert all("9999" not in str(m.get("id", "")) for m in result)
+    assert "Ошибка разбора даты матча" in caplog.text

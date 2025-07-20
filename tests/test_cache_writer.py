@@ -45,4 +45,4 @@ def test_get_cache_last_modified(tmp_path, monkeypatch):
 def test_read_nonexistent_cache(monkeypatch):
     monkeypatch.setattr("utils.cache_writer.CACHE_DIR", "/nonexistent/path")
     result = read_json_from_cache("no_such_file")
-    assert result == {}
+    assert result == {"matches": [], "updated_at": None}
