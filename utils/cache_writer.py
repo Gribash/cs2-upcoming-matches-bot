@@ -32,23 +32,23 @@ def write_json_to_cache(name: str, data: dict):
     except Exception as e:
         logger.exception(f"[write_json_to_cache] Ошибка при записи кэша '{name}': {e}")
 
-def read_json_from_cache(name: str) -> list[dict]:
+def read_json_from_cache(name: str) -> dict:
     path = get_cache_path(name)
-
     if not os.path.exists(path):
-        logger.warning(f"[read_json_from_cache] Файл кэша '{name}' не найден ({path})")
-        return []
+        return {}
 
-    try:
-        with open(path, "r", encoding="utf-8") as f:
+    with open(path, "r", encoding="utf-8") as f:
+        try:
             data = json.load(f)
-            matches = data.get("matches", [])
-            logger.debug(f"[read_json_from_cache] Прочитано {len(matches)} матчей из '{name}'")
-            return matches
-    except Exception as e:
-        logger.warning(f"[read_json_from_cache] Ошибка чтения кэша '{name}': {e}")
-        return []
-
+            if isinstance(data, dict):
+                return data
+            else:
+                logger.warning(f"⚠️ Кэш-файл {name} содержит не словарь, возвращаю пустой словарь.")
+                return {}
+        except Exception as e:
+            logger.warning(f"❌ Ошибка чтения кэша {name}: {e}")
+            return {}
+        
 def get_cache_last_modified(name: str) -> Optional[datetime]:
     path = get_cache_path(name)
 
