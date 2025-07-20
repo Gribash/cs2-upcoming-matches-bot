@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from telegram import Bot, InlineKeyboardButton, InlineKeyboardMarkup
 from dotenv import load_dotenv
 
-from db import (
+from bot.db import (
     get_all_subscribers,
     get_notified_match_ids,
     mark_notified_bulk,

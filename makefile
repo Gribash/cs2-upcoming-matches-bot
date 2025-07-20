@@ -99,3 +99,6 @@ refresh-cache:
 		rm -rf cache/* && \
 		docker-compose exec -T bot python utils/refresh_cache.py \
 	'
+
+test:
+	pytest -v tests/test_notifications.py

@@ -10,7 +10,7 @@ from telegram.request import HTTPXRequest
 from utils.matches_cache_reader import get_matches
 from utils.pandascore import format_time_until
 from utils.logging_config import setup_logging
-from db import (
+from bot.db import (
     init_db,
     add_subscriber,
     update_is_active,
