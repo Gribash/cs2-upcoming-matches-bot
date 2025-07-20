@@ -9,8 +9,9 @@ DB_PATH = "data/subscribers.db"
 # Настройка логгера
 setup_logging()
 logger = logging.getLogger("db")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG if os.getenv("DEV_MODE") == "true" else logging.INFO)
 
+# Инициализация базы данных и таблиц
 def init_db():
     os.makedirs("data", exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -73,7 +74,7 @@ def get_all_subscribers() -> list[int]:
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.execute("SELECT user_id FROM subscribers WHERE is_active = 1")
         users = [row[0] for row in cursor.fetchall()]
-        logger.info(f"Получено {len(users)} активных подписчиков из базы: {users}")
+        logger.debug(f"Получено {len(users)} активных подписчиков из базы: {users}")
         return users
 
 def get_subscriber_tier(user_id: int) -> str:
@@ -81,7 +82,7 @@ def get_subscriber_tier(user_id: int) -> str:
         cursor = conn.execute("SELECT tier FROM subscribers WHERE user_id = ?", (user_id,))
         row = cursor.fetchone()
         tier = row[0] if row else "sa"
-        logger.info(f"Tier для пользователя {user_id}: {tier}")
+        logger.debug(f"Tier для пользователя {user_id}: {tier}")
         return tier
 
 def was_notified(user_id: int, match_id: int) -> bool:

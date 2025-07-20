@@ -98,6 +98,7 @@ async def send_match(
 
 async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/next от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="upcoming", tier=tier, limit=8)
 
@@ -112,6 +113,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/live от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="running", tier=tier, limit=8)
 
@@ -145,6 +147,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/recent от пользователя {user_id}")
     tier = get_subscriber_tier(user_id) or "all"
     matches = get_matches(status="past", tier=tier, limit=8)
 
@@ -159,17 +162,20 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/subscribe_top_tiers от пользователя {user_id}")
     add_subscriber(user_id, tier="sa")
     update_is_active(user_id, True)
     await update.message.reply_text("Вы подписаны на топ-турниры")
 
 async def unsubscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/unsubscribe от пользователя {user_id}")
     update_is_active(user_id, False)
     await update.message.reply_text("Вы отписаны от уведомлений")
 
 async def subscribe_all(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
+    logger.info(f"/subscribe_all_tiers от пользователя {user_id}")
     add_subscriber(user_id, tier="all")
     update_is_active(user_id, True)
     await update.message.reply_text("Теперь вы подписаны на все турниры")

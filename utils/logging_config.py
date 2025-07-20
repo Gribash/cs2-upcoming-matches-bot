@@ -10,7 +10,7 @@ def setup_logging():
         "matches": "logs/matches.log",
         "telegram_http": "logs/telegram_http.log",
         "db": "logs/db.log",
-        "error": "logs/error.log"
+        "error": "logs/errors.log"
     }
 
     formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")

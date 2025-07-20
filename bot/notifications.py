@@ -20,7 +20,7 @@ load_dotenv()
 os.makedirs("logs", exist_ok=True)
 setup_logging()
 logger = logging.getLogger("notifications")
-logger.setLevel(logging.INFO)
+logger.setLevel(logging.DEBUG if os.getenv("DEV_MODE") == "true" else logging.INFO)
 
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 INTERVAL = int(os.getenv("NOTIFY_INTERVAL_SECONDS", 60))
@@ -29,11 +29,11 @@ bot = Bot(token=TELEGRAM_BOT_TOKEN)
 
 async def notify_upcoming_matches():
     try:
-        logger.info("🔍 Запуск проверки матчей...")
+        logger.debug("🔍 Запуск проверки матчей...")
 
         # Получаем подписчиков
         subscribers = get_all_subscribers() or []
-        logger.info(f"👥 Найдено подписчиков: {len(subscribers)}")
+        logger.debug(f"👥 Найдено подписчиков: {len(subscribers)}")
 
         subs_by_tier = {"sa": [], "all": []}
         for user_id in subscribers:
@@ -41,7 +41,7 @@ async def notify_upcoming_matches():
             tier = tier if tier in ["sa", "all"] else "all"
             subs_by_tier[tier].append(user_id)
 
-        logger.info(f"S/A: {len(subs_by_tier['sa'])}, ALL: {len(subs_by_tier['all'])}")
+        logger.debug(f"S/A: {len(subs_by_tier['sa'])}, ALL: {len(subs_by_tier['all'])}")
 
         now = datetime.now(timezone.utc)
 
@@ -75,12 +75,8 @@ async def notify_upcoming_matches():
                     serie = match.get("serie", {}).get("full_name", "?")
                     match_name = match.get("name", "?")
 
-                    message = f"<b>🔔 Скоро начнётся матч!</b>\n"
+                    message = f"<b>🔔 Матч начинается!</b>\n"
                     message += f"{league} | {tournament}\n{serie}\n<b>{match_name}</b>\n"
-
-                    time_until = format_time_until(begin_at)
-                    if time_until:
-                        message += f"<b>Начнётся через:</b> {time_until}"
 
                     # --- Формируем кнопку трансляции ---
                     stream_url = match.get("stream_url")
@@ -94,14 +90,14 @@ async def notify_upcoming_matches():
                             [InlineKeyboardButton(text=f"🟪 {teams_text}", url=stream_url)]
                         ])
                     else:
-                        message += "\n⚠️ <i>Трансляция отсутствует</i>"
+                        message += "\n <i>Трансляция отсутствует</i>"
                         keyboard = None
 
                     # --- Рассылка уведомлений ---
                     for user_id in subs_by_tier.get(tier, []):
                         already_notified = match_id in get_notified_match_ids(user_id)
                         if already_notified:
-                            logger.info(f"🔁 Пользователь {user_id} уже уведомлён о матче {match_id}")
+                            logger.debug(f"🔁 Пользователь {user_id} уже уведомлён о матче {match_id}")
                             continue
 
                         try:
