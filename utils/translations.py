@@ -57,3 +57,6 @@ TRANSLATIONS = {
         "no_stream": "Sem transmissão disponível",
     }
 }
+
+def t(key: str, lang: str = "en") -> str:
+    return TRANSLATIONS.get(lang, TRANSLATIONS["en"]).get(key, key)
