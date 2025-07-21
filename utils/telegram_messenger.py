@@ -17,10 +17,11 @@ async def send_match_batch(
     show_time_until: bool = False,
     show_winner: bool = False,
     stream_button: bool = False,
-    empty_text: str = "Матчи не найдены"
+    empty_text: str = "Матчи не найдены",
+    lang: str = None,
 ):
     user_id = update.effective_chat.id
-    lang = get_subscriber_language(user_id)
+    lang = lang or get_subscriber_language(user_id)
 
     if not matches:
         await context.bot.send_message(chat_id=user_id, text=empty_text)

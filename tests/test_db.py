@@ -68,3 +68,15 @@ def test_remove_subscriber(temp_db_path):
     db.add_subscriber(user_id)
     db.remove_subscriber(user_id)
     assert not db.is_subscriber_active(user_id)
+
+def test_update_and_get_language(temp_db_path):
+    user_id = 1010
+    db.add_subscriber(user_id)
+    db.update_language(user_id, "pt")
+    assert db.get_subscriber_language(user_id) == "pt"
+
+def test_save_feedback(temp_db_path):
+    user_id = 1011
+    db.add_subscriber(user_id)
+    db.save_feedback(user_id, "This is a test feedback.")
+    # Нет функции get_feedback — можно просто проверить что ошибок не возникло

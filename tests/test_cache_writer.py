@@ -46,3 +46,15 @@ def test_read_nonexistent_cache(monkeypatch):
     monkeypatch.setattr("utils.cache_writer.CACHE_DIR", "/nonexistent/path")
     result = read_json_from_cache("no_such_file")
     assert result == {"matches": [], "updated_at": None}
+
+def test_overwrite_existing_cache(tmp_path, monkeypatch):
+    cache_dir = tmp_path / "cache"
+    cache_dir.mkdir()
+    monkeypatch.setattr("utils.cache_writer.CACHE_DIR", str(cache_dir))
+
+    name = "test_overwrite"
+    write_json_to_cache(name, {"matches": [{"id": 1}]})
+    write_json_to_cache(name, {"matches": [{"id": 2}]})
+
+    result = read_json_from_cache(name)
+    assert result["matches"][0]["id"] == 2
