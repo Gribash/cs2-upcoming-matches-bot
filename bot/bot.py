@@ -114,13 +114,8 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def feedback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
+    logger.info(f"➡️ feedback_start от пользователя {user_id}")
     lang = get_subscriber_language(user_id)
-    now = datetime.now()
-    last = feedback_states.get(user_id)
-
-    if last and (now - last).total_seconds() < 600:
-        await update.message.reply_text(t("feedback_too_frequent", lang))
-        return ConversationHandler.END
 
     await update.message.reply_text(t("feedback_prompt", lang))
     return FEEDBACK_WAITING
