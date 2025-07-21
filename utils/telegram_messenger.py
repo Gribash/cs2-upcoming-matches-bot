@@ -1,8 +1,9 @@
-from telegram import Update
+from telegram import Update, InlineKeyboardMarkup
 from telegram.ext import ContextTypes
 import logging
 
 from utils.form_match_card import build_match_card
+from bot.db import get_subscriber_language
 
 logger = logging.getLogger("telegram_messenger")
 
@@ -19,6 +20,7 @@ async def send_match_batch(
     empty_text: str = "Матчи не найдены"
 ):
     user_id = update.effective_chat.id
+    lang = get_subscriber_language(user_id)
 
     if not matches:
         await context.bot.send_message(chat_id=user_id, text=empty_text)
@@ -32,7 +34,8 @@ async def send_match_batch(
             match,
             show_time_until=show_time_until,
             show_winner=show_winner,
-            stream_button=stream_button
+            stream_button=stream_button,
+            lang=lang
         )
 
         await context.bot.send_message(

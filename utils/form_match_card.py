@@ -1,12 +1,14 @@
 from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from utils.pandascore import format_time_until
+from utils.translations import t
 
 def build_match_card(
     match: dict,
     *,
     show_time_until: bool = False,
     show_winner: bool = False,
-    stream_button: bool = False
+    stream_button: bool = False,
+    lang: str = "en"
 ) -> tuple[str, InlineKeyboardMarkup | None]:
     league = match.get("league", {}).get("name", "?")
     tournament = match.get("tournament", {}).get("name", "?")
@@ -18,7 +20,7 @@ def build_match_card(
 
     message = f"{league} | {tournament}\n{serie}\n<b>{team1} vs {team2}</b>"
 
-    # Победитель (если матч завершён и указан winner_id)
+    # Победитель
     if show_winner and match.get("status") == "finished":
         winner_id = match.get("winner_id")
         winner_name = "?"
@@ -26,7 +28,7 @@ def build_match_card(
             if str(team.get("id")) == str(winner_id):
                 winner_name = team.get("name") or team.get("acronym") or "?"
                 break
-        message += f"\n<b>🏆 Победитель:</b> {winner_name}"
+        message += f"\n<b>{t('winner', lang)}</b> {winner_name}"
 
     # Время до начала
     if show_time_until:
@@ -34,9 +36,9 @@ def build_match_card(
         if begin_at:
             time_until = format_time_until(begin_at)
             if time_until != "Время неизвестно":
-                message += f"\n<b>Начнётся через:</b> {time_until}"
+                message += f"\n<b>{t('time_until', lang)}</b> {time_until}"
 
-    # Кнопка трансляции (только если включен флаг)
+    # Кнопка трансляции
     keyboard = None
     if stream_button:
         stream_url = match.get("stream_url")
@@ -46,6 +48,6 @@ def build_match_card(
                 [InlineKeyboardButton(text=button_text, url=stream_url)]
             ])
         else:
-            message += "\n<i>Трансляция отсутствует</i>"
+            message += f"\n<i>{t('no_stream', lang)}</i>"
 
     return message, keyboard

@@ -23,7 +23,8 @@ def init_db():
             user_id INTEGER PRIMARY KEY,
             tier TEXT DEFAULT 'sa' CHECK(tier IN ('sa', 'all')),
             is_active INTEGER DEFAULT 1,
-            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            language TEXT DEFAULT 'en'
         );
     """)
     
@@ -45,22 +46,22 @@ def init_db():
     conn.close()
     logger.info("База данных и таблицы инициализированы.")
 
-def add_subscriber(user_id: int, tier: str = "sa"):
+def add_subscriber(user_id: int, tier: str = "sa", language: str = "en"):
     try:
         conn = sqlite3.connect(DB_PATH)
         c = conn.cursor()
 
         c.execute("""
-            INSERT INTO subscribers (user_id, tier, is_active)
-            VALUES (?, ?, 1)
+            INSERT INTO subscribers (user_id, tier, is_active, language)
+            VALUES (?, ?, 1, ?)
             ON CONFLICT(user_id) DO UPDATE SET
                 tier = excluded.tier,
                 is_active = 1
-        """, (user_id, tier))
+        """, (user_id, tier, language))
 
         conn.commit()
         conn.close()
-        logger.info(f"Подписчик {user_id} добавлен/обновлён с tier={tier}")
+        logger.info(f"Подписчик {user_id} добавлен/обновлён с tier={tier}, language={language}")
     except Exception as e:
         logger.error(f"Ошибка при добавлении/обновлении подписчика {user_id}: {e}")
 
@@ -173,3 +174,30 @@ def create_indexes():
     """)
     conn.commit()
     conn.close()
+
+def get_connection():
+    return sqlite3.connect(DB_PATH)
+
+def get_subscriber_language(user_id: int) -> str:
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT language FROM subscribers WHERE user_id = ?", (user_id,))
+            row = cursor.fetchone()
+            return row[0] if row and row[0] else "en"
+    except Exception as e:
+        logger.exception("Ошибка при получении языка пользователя")
+        return "en"
+
+
+def update_language(user_id: int, language: str):
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "UPDATE subscribers SET language = ? WHERE user_id = ?",
+                (language, user_id)
+            )
+            conn.commit()
+    except Exception as e:
+        logger.exception("Ошибка при обновлении языка пользователя")
