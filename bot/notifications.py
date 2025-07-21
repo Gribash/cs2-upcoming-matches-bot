@@ -10,9 +10,12 @@ from bot.db import (
     get_notified_match_ids,
     mark_notified_bulk,
     get_subscriber_tier,
+    get_subscriber_language,  # ✅ Добавлено
 )
 from utils.matches_cache_reader import get_matches
 from utils.logging_config import setup_logging
+from utils.form_match_card import build_match_card
+from utils.translations import t  # ✅ Добавлено
 
 # ✅ Новый импорт карточки матча
 from utils.form_match_card import build_match_card
@@ -93,12 +96,7 @@ async def notify_upcoming_matches():
 
                 if -5 <= minutes_to_start <= 5:
                     match_name = match.get("name", "?")
-                    prefix = "<b>🔔 Матч начинается!</b>\n"
-                    message, keyboard = build_match_card(
-                        match,
-                        stream_button_text=None  # автоматически возьмётся {team1 vs team2}
-                    )
-                    message = prefix + message
+                    message, keyboard = build_match_card(match)
 
                     tasks = []
 
@@ -107,7 +105,11 @@ async def notify_upcoming_matches():
                             logger.debug(f"🔁 Уже уведомлён: {user_id} -> матч {match_id}")
                             continue
 
-                        tasks.append(send(user_id, match_id, match_name, message, keyboard, successful_notifications))
+                        lang = get_subscriber_language(user_id)
+                        prefix = t("prefix_starting", lang)
+                        final_message = prefix + message
+
+                        tasks.append(send(user_id, match_id, match_name, final_message, keyboard, successful_notifications))
 
                     await asyncio.gather(*tasks)
 
