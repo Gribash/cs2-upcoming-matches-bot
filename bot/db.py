@@ -57,6 +57,7 @@ def add_subscriber(user_id: int, tier: str = "sa", language: str = "en"):
             ON CONFLICT(user_id) DO UPDATE SET
                 tier = excluded.tier,
                 is_active = 1
+                -- language НЕ ОБНОВЛЯЕМ!
         """, (user_id, tier, language))
 
         conn.commit()
