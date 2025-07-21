@@ -86,8 +86,8 @@ get-logs:
 	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/logs ./logs
 
 get-data:
-	rm -f ./data
-	scp $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/data/subscribers.db ./data
+	rm -rf ./data
+	scp -r $(SSH_USER)@$(SSH_HOST):$(SSH_PATH)/data ./data
 
 get-cache:
 	rm -rf ./cache
