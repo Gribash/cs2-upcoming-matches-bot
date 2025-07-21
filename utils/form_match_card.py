@@ -6,7 +6,7 @@ def build_match_card(
     *,
     show_time_until: bool = False,
     show_winner: bool = False,
-    stream_button_text: str | None = None
+    stream_button: bool = False
 ) -> tuple[str, InlineKeyboardMarkup | None]:
     league = match.get("league", {}).get("name", "?")
     tournament = match.get("tournament", {}).get("name", "?")
@@ -36,15 +36,16 @@ def build_match_card(
             if time_until != "Время неизвестно":
                 message += f"\n<b>Начнётся через:</b> {time_until}"
 
-    # Кнопка трансляции
-    stream_url = match.get("stream_url")
-    if stream_url and stream_url.startswith("http"):
-        button_text = stream_button_text or f"{team1} vs {team2}"
-        keyboard = InlineKeyboardMarkup([
-            [InlineKeyboardButton(text=button_text, url=stream_url)]
-        ])
-    else:
-        keyboard = None
-        message += "\n<i>Трансляция отсутствует</i>"
+    # Кнопка трансляции (только если включен флаг)
+    keyboard = None
+    if stream_button:
+        stream_url = match.get("stream_url")
+        if stream_url and stream_url.startswith("http"):
+            button_text = f"{team1} vs {team2}"
+            keyboard = InlineKeyboardMarkup([
+                [InlineKeyboardButton(text=button_text, url=stream_url)]
+            ])
+        else:
+            message += "\n<i>Трансляция отсутствует</i>"
 
     return message, keyboard

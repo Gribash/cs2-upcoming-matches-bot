@@ -1,4 +1,4 @@
-from telegram import Update, InlineKeyboardMarkup
+from telegram import Update
 from telegram.ext import ContextTypes
 import logging
 
@@ -32,19 +32,12 @@ async def send_match_batch(
             match,
             show_time_until=show_time_until,
             show_winner=show_winner,
-            stream_button_text=f"{match_team_names(match)}" if stream_button else ""
+            stream_button=stream_button
         )
 
         await context.bot.send_message(
             chat_id=user_id,
             text=message_text,
             parse_mode="HTML",
-            reply_markup=keyboard if stream_button else None
+            reply_markup=keyboard
         )
-
-
-def match_team_names(match: dict) -> str:
-    opponents = match.get("opponents", [])
-    team1 = opponents[0].get("name") if len(opponents) > 0 else "Team1"
-    team2 = opponents[1].get("name") if len(opponents) > 1 else "Team2"
-    return f"{team1} vs {team2}"
