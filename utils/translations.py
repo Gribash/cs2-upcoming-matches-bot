@@ -7,7 +7,7 @@ TRANSLATIONS = {
             "You can change the language using /language."
         ),
         "choose_language": "Please choose your language:",
-        "language_updated": "Language updated to English ✅",
+        "language_updated": "✅ Language updated to English",
         "no_upcoming": "No upcoming matches",
         "no_live": "No live matches",
         "no_recent": "No recent matches",
@@ -17,6 +17,9 @@ TRANSLATIONS = {
         "winner": "🏆 Winner:",
         "time_until": "⏳ Starts in:",
         "no_stream": "No stream available",
+        "prefix_upcoming": "⏳ <b>Upcoming Matches</b>",
+        "prefix_live": "🔴 <b>Live Matches</b>",
+        "prefix_recent": "🏁 <b>Recent Matches</b>",
     },
     "ru": {
         "greeting": (
@@ -26,7 +29,7 @@ TRANSLATIONS = {
             "Вы можете сменить язык с помощью /language."
         ),
         "choose_language": "Пожалуйста, выберите язык:",
-        "language_updated": "Язык обновлён на Русский ✅",
+        "language_updated": "✅ Язык обновлён на Русский",
         "no_upcoming": "Нет ближайших матчей",
         "no_live": "Сейчас нет активных матчей",
         "no_recent": "Нет результатов недавних матчей",
@@ -36,6 +39,9 @@ TRANSLATIONS = {
         "winner": "🏆 Победитель:",
         "time_until": "⏳ Начнётся через:",
         "no_stream": "Трансляция отсутствует",
+        "prefix_upcoming": "⏳ <b>Ближайшие матчи</b>",
+        "prefix_live": "🔴 <b>Текущие матчи</b>",
+        "prefix_recent": "🏁 <b>Недавние матчи</b>",
     },
     "pt": {
         "greeting": (
@@ -45,7 +51,7 @@ TRANSLATIONS = {
             "Você pode alterar o idioma com /language."
         ),
         "choose_language": "Por favor, escolha seu idioma:",
-        "language_updated": "Idioma alterado para Português ✅",
+        "language_updated": "✅ Idioma alterado para Português",
         "no_upcoming": "Sem partidas futuras",
         "no_live": "Nenhuma partida ao vivo agora",
         "no_recent": "Nenhum resultado recente",
@@ -55,6 +61,9 @@ TRANSLATIONS = {
         "winner": "🏆 Vencedor:",
         "time_until": "⏳ Começa em:",
         "no_stream": "Sem transmissão disponível",
+        "prefix_upcoming": "⏳ <b>Próximas Partidas</b>",
+        "prefix_live": "🔴 <b>Partidas Ao Vivo</b>",
+        "prefix_recent": "🏁 <b>Partidas Recentes</b>",
     }
 }
 
