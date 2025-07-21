@@ -148,13 +148,6 @@ async def feedback_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(t("feedback_thanks", lang))
     return ConversationHandler.END
 
-    # Устанавливаем таймер только после валидного сообщения
-    feedback_states[user_id] = now
-    save_feedback(user_id, text)
-    logger.info(f"Feedback получен от {user_id}: {text[:50]}...")
-    await update.message.reply_text(t("feedback_thanks", lang))
-    return ConversationHandler.END
-
 async def feedback_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = get_subscriber_language(update.effective_user.id)
     await update.message.reply_text(t("feedback_cancelled", lang))
