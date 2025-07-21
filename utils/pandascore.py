@@ -86,27 +86,44 @@ async def fetch_all_matches() -> dict:
     }
 
 
-def format_time_until(start_time_iso: str) -> str:
+def format_time_until(start_time_iso: str, lang: str = "en") -> str:
     try:
         start_time = datetime.fromisoformat(start_time_iso.replace("Z", "+00:00"))
         now = datetime.now(timezone.utc)
         delta = start_time - now
 
         if delta.total_seconds() < 0:
-            return "⏱ Уже начался"
+            return {
+                "en": "⏱ Already started",
+                "ru": "⏱ Уже начался",
+                "pt": "⏱ Já começou"
+            }.get(lang, "⏱ Already started")
 
         days = delta.days
         hours, remainder = divmod(delta.seconds, 3600)
         minutes = remainder // 60
 
+        labels = {
+            "en": {"d": "d", "h": "h", "m": "min", "few": "A few minutes", "unknown": "Unknown time"},
+            "ru": {"d": "дн.", "h": "ч.", "m": "мин.", "few": "Несколько минут", "unknown": "Время неизвестно"},
+            "pt": {"d": "d", "h": "h", "m": "min", "few": "Alguns minutos", "unknown": "Hora desconhecida"},
+        }.get(lang, {
+            "d": "d", "h": "h", "m": "min", "few": "A few minutes", "unknown": "Unknown time"
+        })
+
         parts = []
         if days > 0:
-            parts.append(f"{days} дн.")
+            parts.append(f"{days} {labels['d']}")
         if hours > 0:
-            parts.append(f"{hours} ч.")
+            parts.append(f"{hours} {labels['h']}")
         if minutes > 0:
-            parts.append(f"{minutes} мин.")
+            parts.append(f"{minutes} {labels['m']}")
 
-        return " ".join(parts) if parts else "Несколько минут"
+        return " ".join(parts) if parts else labels["few"]
+
     except Exception:
-        return "Время неизвестно"
+        return {
+            "en": "Unknown time",
+            "ru": "Время неизвестно",
+            "pt": "Hora desconhecida"
+        }.get(lang, "Unknown time")
