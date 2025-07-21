@@ -117,6 +117,7 @@ async def feedback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     logger.info(f"➡️ feedback_start от пользователя {user_id}")
     lang = get_subscriber_language(user_id)
 
+    # Удалим проверку здесь — пусть команда всегда работает
     await update.message.reply_text(t("feedback_prompt", lang))
     return FEEDBACK_WAITING
 
@@ -133,11 +134,19 @@ async def feedback_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(t("feedback_too_short", lang))
         return FEEDBACK_WAITING
 
-    now = datetime.now()
+    # Проверка только на уже отправленные валидные сообщения
     last = feedback_states.get(user_id)
+    now = datetime.now()
     if last and (now - last).total_seconds() < 600:
         await update.message.reply_text(t("feedback_too_frequent", lang))
         return ConversationHandler.END
+
+    # Устанавливаем таймер только после успешной отправки
+    feedback_states[user_id] = now
+    save_feedback(user_id, text)
+    logger.info(f"Feedback получен от {user_id}: {text[:50]}...")
+    await update.message.reply_text(t("feedback_thanks", lang))
+    return ConversationHandler.END
 
     # Устанавливаем таймер только после валидного сообщения
     feedback_states[user_id] = now
