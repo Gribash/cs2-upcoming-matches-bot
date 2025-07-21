@@ -202,3 +202,16 @@ def update_language(user_id: int, language: str):
             conn.commit()
     except Exception as e:
         logger.exception("Ошибка при обновлении языка пользователя")
+
+def save_feedback(user_id: int, message: str):
+    try:
+        with get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT INTO feedback_messages (user_id, message) VALUES (?, ?)",
+                (user_id, message)
+            )
+            conn.commit()
+            logger.info(f"Feedback от {user_id} сохранён.")
+    except Exception as e:
+        logger.exception("Ошибка при сохранении обратной связи")

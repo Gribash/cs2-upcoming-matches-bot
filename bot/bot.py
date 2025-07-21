@@ -6,30 +6,32 @@ from dotenv import load_dotenv
 from telegram import Update, BotCommand
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
 from telegram.request import HTTPXRequest
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton, CallbackQuery
-from telegram.ext import CallbackQueryHandler
-from utils.translations import t
-from bot.db import update_language, get_subscriber_language
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from telegram.ext import CallbackQueryHandler, MessageHandler, filters, ConversationHandler
+from datetime import datetime
 
+from utils.translations import t
 from utils.matches_cache_reader import get_matches
 from utils.logging_config import setup_logging
+from utils.telegram_messenger import send_match_batch
 from bot.db import (
     init_db,
     add_subscriber,
     update_is_active,
     get_subscriber_tier,
+    update_language,
+    get_subscriber_language,
+    save_feedback,
 )
 
-# ✅ Новый импорт для отправки карточек матчей
-from utils.telegram_messenger import send_match_batch
+FEEDBACK_WAITING = 1
+feedback_states = {}
 
-# Загрузка токена
 load_dotenv()
 TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
 if not TELEGRAM_BOT_TOKEN:
     raise RuntimeError("Не задан TELEGRAM_BOT_TOKEN")
 
-# Инициализация
 init_db()
 os.makedirs("logs", exist_ok=True)
 setup_logging()
@@ -42,7 +44,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     add_subscriber(user_id, tier="sa")
     update_is_active(user_id, True)
     logger.info(f"/start от пользователя {user_id}")
-
     lang = get_subscriber_language(user_id)
     await update.message.reply_text(t("greeting", lang))
 
@@ -52,13 +53,7 @@ async def next_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tier = get_subscriber_tier(user_id) or "all"
     lang = get_subscriber_language(user_id)
     matches = get_matches(status="upcoming", tier=tier, limit=8)
-    await send_match_batch(
-        update, context,
-        matches=matches,
-        prefix_text=t("prefix_upcoming", lang),
-        show_time_until=True,
-        empty_text=t("no_upcoming", lang)
-    )
+    await send_match_batch(update, context, matches=matches, prefix_text=t("prefix_upcoming", lang), show_time_until=True, empty_text=t("no_upcoming", lang))
 
 async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -66,13 +61,7 @@ async def live_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tier = get_subscriber_tier(user_id) or "all"
     lang = get_subscriber_language(user_id)
     matches = get_matches(status="running", tier=tier, limit=8)
-    await send_match_batch(
-        update, context,
-        matches=matches,
-        prefix_text=t("prefix_live", lang),
-        stream_button=True,
-        empty_text=t("no_live", lang)
-    )
+    await send_match_batch(update, context, matches=matches, prefix_text=t("prefix_live", lang), stream_button=True, empty_text=t("no_live", lang))
 
 async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -80,13 +69,7 @@ async def recent_matches(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tier = get_subscriber_tier(user_id) or "all"
     lang = get_subscriber_language(user_id)
     matches = get_matches(status="past", tier=tier, limit=8)
-    await send_match_batch(
-        update, context,
-        matches=matches,
-        prefix_text=t("prefix_recent", lang),
-        show_winner=True,
-        empty_text=t("no_recent", lang)
-    )
+    await send_match_batch(update, context, matches=matches, prefix_text=t("prefix_recent", lang), show_winner=True, empty_text=t("no_recent", lang))
 
 async def subscribe(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_chat.id
@@ -124,12 +107,52 @@ async def language(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
     user_id = query.from_user.id
     lang_code = query.data.replace("lang_", "")
     update_language(user_id, lang_code)
-
     await query.edit_message_text(t("language_updated", lang_code))
+
+async def feedback_start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    lang = get_subscriber_language(user_id)
+    now = datetime.now()
+    last = feedback_states.get(user_id)
+    if last and (now - last).total_seconds() < 600:
+        await update.message.reply_text(t("feedback_too_frequent", lang))
+        return ConversationHandler.END
+    feedback_states[user_id] = now
+    await update.message.reply_text(t("feedback_prompt", lang))
+    return FEEDBACK_WAITING
+
+async def feedback_receive(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    lang = get_subscriber_language(user_id)
+    text = update.message.text.strip()
+
+    if "http://" in text or "https://" in text or "t.me" in text:
+        await update.message.reply_text(t("feedback_links_blocked", lang))
+        return FEEDBACK_WAITING
+
+    if not text or len(text) < 3:
+        await update.message.reply_text(t("feedback_too_short", lang))
+        return FEEDBACK_WAITING
+
+    now = datetime.now()
+    last = feedback_states.get(user_id)
+    if last and (now - last).total_seconds() < 600:
+        await update.message.reply_text(t("feedback_too_frequent", lang))
+        return ConversationHandler.END
+
+    feedback_states[user_id] = now
+    save_feedback(user_id, text)
+    logger.info(f"Feedback получен от {user_id}: {text[:50]}...")
+    await update.message.reply_text(t("feedback_thanks", lang))
+    return ConversationHandler.END
+
+async def feedback_cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    lang = get_subscriber_language(update.effective_user.id)
+    await update.message.reply_text(t("feedback_cancelled", lang))
+    return ConversationHandler.END
 
 async def set_bot_commands(app):
     localized_commands = {
@@ -142,6 +165,7 @@ async def set_bot_commands(app):
             BotCommand("unsubscribe", "Unsubscribe from notifications"),
             BotCommand("subscribe_all_tiers", "Subscribe to all tournaments"),
             BotCommand("language", "Change language"),
+            BotCommand("feedback", "Leave feedback")
         ],
         "ru": [
             BotCommand("start", "Запустить бота"),
@@ -152,6 +176,7 @@ async def set_bot_commands(app):
             BotCommand("unsubscribe", "Отписаться от уведомлений"),
             BotCommand("subscribe_all_tiers", "Подписаться на все турниры"),
             BotCommand("language", "Изменить язык"),
+            BotCommand("feedback", "Оставить обратную связь")
         ],
         "pt": [
             BotCommand("start", "Iniciar o bot"),
@@ -162,9 +187,9 @@ async def set_bot_commands(app):
             BotCommand("unsubscribe", "Cancelar notificações"),
             BotCommand("subscribe_all_tiers", "Inscrever-se em todos os torneios"),
             BotCommand("language", "Alterar idioma"),
+            BotCommand("feedback", "Deixar feedback")
         ],
     }
-
     for lang_code, commands in localized_commands.items():
         await app.bot.set_my_commands(commands=commands, language_code=lang_code)
 
@@ -181,6 +206,13 @@ async def main():
     app.add_handler(CommandHandler("subscribe_all_tiers", subscribe_all))
     app.add_handler(CommandHandler("language", language))
     app.add_handler(CallbackQueryHandler(language_callback, pattern="^lang_"))
+    app.add_handler(ConversationHandler(
+        entry_points=[CommandHandler("feedback", feedback_start)],
+        states={
+            FEEDBACK_WAITING: [MessageHandler(filters.TEXT & ~filters.COMMAND, feedback_receive)]
+        },
+        fallbacks=[CommandHandler("cancel", feedback_cancel)],
+    ))
 
     await set_bot_commands(app)
     logger.info("Бот запущен")
@@ -189,4 +221,4 @@ async def main():
 nest_asyncio.apply()
 
 if __name__ == "__main__":
-    asyncio.get_event_loop().run_until_complete(main())
+    asyncio.run(main())
