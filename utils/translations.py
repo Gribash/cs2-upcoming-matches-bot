@@ -26,7 +26,13 @@ TRANSLATIONS = {
         "feedback_too_short": "📭 Please describe your message in more detail.",
         "feedback_too_frequent": "🕒 Please wait 10 minutes before sending feedback again.",
         "feedback_cancelled": "❌ Cancelled.",
-        "prefix_starting": "🔔 <b>Match is starting!</b>\n"
+        "prefix_starting": "🔔 <b>Match is starting!</b>\n",
+        "already_started": "⏱ Already started",
+        "day_short": "d",
+        "hour_short": "h",
+        "minute_short": "min",
+        "few_minutes": "Few minutes",
+        "unknown_time": "Unknown time",
     },
     "ru": {
         "greeting": (
@@ -55,7 +61,13 @@ TRANSLATIONS = {
         "feedback_too_short": "📭 Распишите подробнее, пожалуйста.",
         "feedback_too_frequent": "🕒 Пожалуйста, подождите 10 минут перед повторной отправкой.",
         "feedback_cancelled": "❌ Отмена.",
-        "prefix_starting": "🔔 <b>Матч начинается!</b>\n"
+        "prefix_starting": "🔔 <b>Матч начинается!</b>\n",
+        "already_started": "⏱ Уже начался",
+        "day_short": "дн.",
+        "hour_short": "ч.",
+        "minute_short": "мин.",
+        "few_minutes": "Несколько минут",
+        "unknown_time": "Время неизвестно",
     },
     "pt": {
         "greeting": (
@@ -84,7 +96,13 @@ TRANSLATIONS = {
         "feedback_too_short": "📭 Por favor, descreva sua mensagem com mais detalhes.",
         "feedback_too_frequent": "🕒 Por favor, espere 10 minutos antes de enviar novamente.",
         "feedback_cancelled": "❌ Cancelado.",
-        "prefix_starting": "🔔 <b>A partida vai começar!</b>\n"
+        "prefix_starting": "🔔 <b>A partida vai começar!</b>\n",
+        "already_started": "⏱ Já começou",
+        "day_short": "d",
+        "hour_short": "h",
+        "minute_short": "min",
+        "few_minutes": "Poucos minutos",
+        "unknown_time": "Hora desconhecida",
     }
 }
 

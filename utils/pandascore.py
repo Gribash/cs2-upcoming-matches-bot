@@ -4,6 +4,7 @@ import httpx
 from dotenv import load_dotenv
 from datetime import datetime, timezone
 from utils.logging_config import setup_logging
+from utils.translations import t
 
 load_dotenv()
 
@@ -93,37 +94,20 @@ def format_time_until(start_time_iso: str, lang: str = "en") -> str:
         delta = start_time - now
 
         if delta.total_seconds() < 0:
-            return {
-                "en": "⏱ Already started",
-                "ru": "⏱ Уже начался",
-                "pt": "⏱ Já começou"
-            }.get(lang, "⏱ Already started")
+            return t("already_started", lang)
 
         days = delta.days
         hours, remainder = divmod(delta.seconds, 3600)
         minutes = remainder // 60
 
-        labels = {
-            "en": {"d": "d", "h": "h", "m": "min", "few": "A few minutes", "unknown": "Unknown time"},
-            "ru": {"d": "дн.", "h": "ч.", "m": "мин.", "few": "Несколько минут", "unknown": "Время неизвестно"},
-            "pt": {"d": "d", "h": "h", "m": "min", "few": "Alguns minutos", "unknown": "Hora desconhecida"},
-        }.get(lang, {
-            "d": "d", "h": "h", "m": "min", "few": "A few minutes", "unknown": "Unknown time"
-        })
-
         parts = []
         if days > 0:
-            parts.append(f"{days} {labels['d']}")
+            parts.append(f"{days} {t('day_short', lang)}")
         if hours > 0:
-            parts.append(f"{hours} {labels['h']}")
+            parts.append(f"{hours} {t('hour_short', lang)}")
         if minutes > 0:
-            parts.append(f"{minutes} {labels['m']}")
+            parts.append(f"{minutes} {t('minute_short', lang)}")
 
-        return " ".join(parts) if parts else labels["few"]
-
+        return " ".join(parts) if parts else t("few_minutes", lang)
     except Exception:
-        return {
-            "en": "Unknown time",
-            "ru": "Время неизвестно",
-            "pt": "Hora desconhecida"
-        }.get(lang, "Unknown time")
+        return t("unknown_time", lang)

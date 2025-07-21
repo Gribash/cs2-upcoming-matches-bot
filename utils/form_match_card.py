@@ -34,7 +34,7 @@ def build_match_card(
     if show_time_until:
         begin_at = match.get("begin_at")
         if begin_at:
-            time_until = format_time_until(begin_at)
+            time_until = format_time_until(begin_at, lang=lang)
             if time_until != "Время неизвестно":
                 message += f"\n<b>{t('time_until', lang)}</b> {time_until}"
 
