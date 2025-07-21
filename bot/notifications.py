@@ -3,12 +3,14 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 from telegram import Bot
+from telegram.error import Forbidden  # ✅ Добавлено
 from dotenv import load_dotenv
 
 from bot.db import (
     get_all_subscribers,
     get_notified_match_ids,
     mark_notified_bulk,
+    update_is_active,  # ✅ Добавлено
     get_subscriber_tier,
     get_subscriber_language,  # ✅ Добавлено
 )
@@ -39,6 +41,9 @@ async def send(user_id, match_id, match_name, message, keyboard, successful_noti
         logger.info(f"✅ Уведомление отправлено: {user_id} -> {match_name} ({match_id})")
         successful_notifications.append((user_id, match_id))
         logger.debug(f"📝 Добавлено к записи: {user_id} -> матч {match_id}")
+    except Forbidden:
+        logger.warning(f"🚫 Пользователь {user_id} заблокировал бота. Помечаем как неактивного.")
+        update_is_active(user_id, False)  # ✅ Помечаем пользователя как неактивного
     except Exception as e:
         logger.warning(f"⚠️ Ошибка при отправке пользователю {user_id}: {e}")
 
