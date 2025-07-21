@@ -132,16 +132,41 @@ async def language_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(t("language_updated", lang_code))
 
 async def set_bot_commands(app):
-    commands = [
-        BotCommand("start", "Запустить бота"),
-        BotCommand("next", "Показать ближайшие матчи"),
-        BotCommand("live", "Показать текущие матчи"),
-        BotCommand("recent", "Показать недавние матчи"),
-        BotCommand("subscribe_top_tiers", "Подписаться на топ-турниры"),
-        BotCommand("unsubscribe", "Отписаться от уведомлений"),
-        BotCommand("subscribe_all_tiers", "Подписаться на все турниры"),
-    ]
-    await app.bot.set_my_commands(commands)
+    localized_commands = {
+        "en": [
+            BotCommand("start", "Start the bot"),
+            BotCommand("next", "Show upcoming matches"),
+            BotCommand("live", "Show live matches"),
+            BotCommand("recent", "Show recent matches"),
+            BotCommand("subscribe_top_tiers", "Subscribe to top-tier tournaments"),
+            BotCommand("unsubscribe", "Unsubscribe from notifications"),
+            BotCommand("subscribe_all_tiers", "Subscribe to all tournaments"),
+            BotCommand("language", "Change language"),
+        ],
+        "ru": [
+            BotCommand("start", "Запустить бота"),
+            BotCommand("next", "Показать ближайшие матчи"),
+            BotCommand("live", "Показать текущие матчи"),
+            BotCommand("recent", "Показать недавние матчи"),
+            BotCommand("subscribe_top_tiers", "Подписаться на топ-турниры"),
+            BotCommand("unsubscribe", "Отписаться от уведомлений"),
+            BotCommand("subscribe_all_tiers", "Подписаться на все турниры"),
+            BotCommand("language", "Изменить язык"),
+        ],
+        "pt": [
+            BotCommand("start", "Iniciar o bot"),
+            BotCommand("next", "Mostrar próximas partidas"),
+            BotCommand("live", "Mostrar partidas ao vivo"),
+            BotCommand("recent", "Mostrar partidas recentes"),
+            BotCommand("subscribe_top_tiers", "Inscrever-se em torneios de alto nível"),
+            BotCommand("unsubscribe", "Cancelar notificações"),
+            BotCommand("subscribe_all_tiers", "Inscrever-se em todos os torneios"),
+            BotCommand("language", "Alterar idioma"),
+        ],
+    }
+
+    for lang_code, commands in localized_commands.items():
+        await app.bot.set_my_commands(commands=commands, language_code=lang_code)
 
 async def main():
     request = HTTPXRequest(connect_timeout=15.0, read_timeout=30.0)
