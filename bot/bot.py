@@ -40,6 +40,9 @@ logger = logging.getLogger("bot")
 # --- Команды ---
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    logger.info(f"/start received. Full update: {update}")
+    if not update.message:
+        return
     user_id = update.effective_chat.id
     add_subscriber(user_id, tier="sa")
     update_is_active(user_id, True)
