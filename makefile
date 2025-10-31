@@ -17,6 +17,12 @@ stop:
 logs:
 	docker-compose logs -f
 
+run-api:
+	docker-compose --env-file $(ENV_FILE) up --build api
+
+stop-api:
+	docker-compose stop api
+
 shell:
 	docker exec -it $$(docker ps -qf "name=cs2_bot") bash
 
@@ -104,6 +110,65 @@ refresh-cache:
 test:
 	PYTHONPATH=. LOG_PROPAGATE=1 pytest
 
+test-api:
+	PYTHONPATH=. LOG_PROPAGATE=1 pytest -q -k api
+
 # Запуск тестов с покрытием
 coverage:
 	PYTHONPATH=. LOG_PROPAGATE=1 pytest --cov=bot --cov=utils tests/ --cov-report=term-missing
+
+# ==== Публикация чистой ветки без node_modules ====
+
+push-clean:
+	# 1) Обновляем main и создаём/переписываем ветку cs2matches-online-clean от origin/main
+	git fetch origin && \
+	git checkout -B cs2matches-online-clean origin/main && \
+	\
+	# 2) Переносим изменения из текущей рабочей ветки (по умолчанию cs2matches-online)
+	#    Добавляйте пути сюда при необходимости; node_modules и .next не затрагиваем
+	git checkout cs2matches-online -- \
+	  api \
+	  web/app \
+	  web/components \
+	  web/lib \
+	  web/package.json \
+	  web/tsconfig.json \
+	  web/next.config.mjs \
+	  web/next-env.d.ts \
+	  web/README.md \
+	  requirements.txt \
+	  docker-compose.yml \
+	  makefile \
+	  README.md \
+	  .gitignore \
+	  tests \
+	  utils \
+	  bot \
+	  supervisord.conf \
+	  Dockerfile \
+	  deploy.sh \
+	  cache \
+	  .dockerignore \
+	  pytest.ini \
+	  CS_upcoming_matches_bot.code-workspace && \
+	\
+	# 3) Коммитим и пушим новую чистую ветку
+	git add -A && \
+	git commit -m "feat: API (FastAPI) + web (Next.js) scaffold; clean branch without node_modules" || true && \
+	git push -u origin cs2matches-online-clean
+
+# ==== Короткие команды пуша ====
+
+push-current:
+	# Пушим текущую ветку на origin (удобно, если уже на cs2matches-online-clean)
+	git push -u origin HEAD
+
+push-clean:
+	# Гарантированно пушим именно cs2matches-online-clean
+	@[ "$(shell git rev-parse --abbrev-ref HEAD)" = "cs2matches-online-clean" ] || \
+		(echo "❌ Вы не в ветке cs2matches-online-clean" && exit 1)
+	# Стадируем и коммитим изменения (если есть)
+	git add -A
+	@git diff --cached --quiet && echo "ℹ️  Нет изменений для коммита" || git commit -m "chore: update clean branch"
+	# Пушим в origin
+	git push -u origin cs2matches-online-clean

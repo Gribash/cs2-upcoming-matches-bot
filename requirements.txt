@@ -4,6 +4,11 @@ requests==2.26.0
 apscheduler==3.8.1
 nest_asyncio==1.5.4
 pytz==2023.3
-pytest==7.1.2
 watchdog[watchmedo]==3.0.0
 httpx==0.25.2
+fastapi==0.114.2
+uvicorn[standard]==0.30.6
+pydantic==2.9.2
+pydantic-settings==2.6.1
+pytest==8.4.1
+pytest-asyncio==1.1.0
