@@ -19,4 +19,5 @@ cache/
 
 # Docker
 *.pid
-*.sock
+*.sockweb/node_modules/
+web/.next/
