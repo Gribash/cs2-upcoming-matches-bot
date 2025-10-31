@@ -167,4 +167,8 @@ push-clean:
 	# Гарантированно пушим именно cs2matches-online-clean
 	@[ "$(shell git rev-parse --abbrev-ref HEAD)" = "cs2matches-online-clean" ] || \
 		(echo "❌ Вы не в ветке cs2matches-online-clean" && exit 1)
+	# Стадируем и коммитим изменения (если есть)
+	git add -A
+	@git diff --cached --quiet && echo "ℹ️  Нет изменений для коммита" || git commit -m "chore: update clean branch"
+	# Пушим в origin
 	git push -u origin cs2matches-online-clean
