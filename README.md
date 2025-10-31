@@ -102,3 +102,32 @@ make deploy
 * Перезапуск Supervisor с ботом, уведомлениями и матч-кэшером
 
 ---
+
+## 🧪 API (FastAPI) — локальная разработка
+
+### Запуск API в Docker
+
+```bash
+make run-api
+```
+
+API будет доступен по адресу: `http://localhost:8080/api`.
+
+Проверка здоровья:
+
+```bash
+curl http://localhost:8080/api/health
+```
+
+Доступные эндпоинты:
+
+- `GET /api/matches/upcoming?tier=1|all&limit=50`
+- `GET /api/matches/live?tier=1|all&limit=50`
+- `GET /api/matches/recent?tier=1|all&limit=50`
+
+### Тесты API
+
+```bash
+make test-api
+```
+

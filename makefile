@@ -17,6 +17,12 @@ stop:
 logs:
 	docker-compose logs -f
 
+run-api:
+	docker-compose --env-file $(ENV_FILE) up --build api
+
+stop-api:
+	docker-compose stop api
+
 shell:
 	docker exec -it $$(docker ps -qf "name=cs2_bot") bash
 
@@ -103,6 +109,9 @@ refresh-cache:
 # Запуск всех тестов с логированием, доступным для caplog
 test:
 	PYTHONPATH=. LOG_PROPAGATE=1 pytest
+
+test-api:
+	PYTHONPATH=. LOG_PROPAGATE=1 pytest -q -k api
 
 # Запуск тестов с покрытием
 coverage:
